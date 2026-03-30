@@ -3,7 +3,10 @@
     "allow": [
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "WebSearch",
+      "Bash(swift build:*)",
+      "Bash(git ls-remote:*)"
     ]
   }
 }

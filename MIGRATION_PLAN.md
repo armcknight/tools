@@ -102,8 +102,8 @@ Each tool is a separate executable target in a single Swift package. Shared code
 - [x] Add `--version` flag to all tools (shared `toolsVersion` constant)
 - [x] Write README.md with install/usage instructions
 - [x] Add tests for shared utilities (FileHelpers, Shell, Version)
-- [ ] Add tests for each tool's core logic (parsing, version bumping, etc.)
-- [ ] Set up CI (GitHub Actions)
+- [x] Add tests for each tool's core logic (parsing, version bumping, etc.)
+- [x] Set up CI (GitHub Actions)
 
 ## Dependencies
 

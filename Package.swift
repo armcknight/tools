@@ -71,5 +71,11 @@ let package = Package(
         .testTarget(
             name: "SharedTests",
             dependencies: ["Shared"]),
+        .testTarget(
+            name: "IntegrationTests",
+            dependencies: [
+                "Shared",
+                .product(name: "Subprocess", package: "swift-subprocess"),
+            ]),
     ]
 )
