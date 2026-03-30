@@ -71,7 +71,7 @@ Each tool is a separate executable target in a single Swift package. Shared code
   - [x] Write output to `.xcbs/<config>/<scheme>.build-settings.lock`
   - [x] Replace machine-specific paths with build setting variable names
   - [x] Diff against existing lock files, exit 66 on changes
-  - [ ] Generate pre-commit hook sample
+  - [x] Generate pre-commit hook sample
 - [x] **psst** — rewrite from Bash to Swift
   - [x] Read keys from `.psst/keys`
   - [x] Resolve values from `.psst/values` → env vars → macOS Keychain (fixed the `PSST_KEYCHAIN_PATH` bug from original)
@@ -99,9 +99,9 @@ Each tool is a separate executable target in a single Swift package. Shared code
 
 ### Phase 4: Polish
 - [x] Add `--help` output to all tools (via swift-argument-parser — automatic)
-- [ ] Add `--version` flag to all tools
-- [ ] Write README.md with install/usage instructions
-- [ ] Add tests for shared utilities
+- [x] Add `--version` flag to all tools (shared `toolsVersion` constant)
+- [x] Write README.md with install/usage instructions
+- [x] Add tests for shared utilities (FileHelpers, Shell, Version)
 - [ ] Add tests for each tool's core logic (parsing, version bumping, etc.)
 - [ ] Set up CI (GitHub Actions)
 

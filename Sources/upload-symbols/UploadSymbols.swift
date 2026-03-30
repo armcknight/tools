@@ -6,7 +6,8 @@ import Shared
 struct UploadSymbols: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Upload dSYM files to Sentry.",
-        discussion: "Resolves Sentry credentials from environment variables, .sentryclirc, or .env file. Designed for use as an Xcode Run Script build phase."
+        discussion: "Resolves Sentry credentials from environment variables, .sentryclirc, or .env file. Designed for use as an Xcode Run Script build phase.",
+        version: toolsVersion
     )
 
     @Option(help: "Build configuration (reads from CONFIGURATION env var if not provided).")

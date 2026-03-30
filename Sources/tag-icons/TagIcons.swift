@@ -11,7 +11,8 @@ import UniformTypeIdentifiers
 struct TagIcons: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Overlay version/commit/custom text onto app icons.",
-        discussion: "Designed for use as an Xcode Run Script build phase. Renders text onto icons using CoreGraphics."
+        discussion: "Designed for use as an Xcode Run Script build phase. Renders text onto icons using CoreGraphics.",
+        version: toolsVersion
     )
 
     @Argument(help: "Mode: commit, version, custom, or cleanup.")

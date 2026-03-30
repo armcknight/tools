@@ -6,7 +6,8 @@ import Shared
 struct Vrsn: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Bump version numbers in project files.",
-        discussion: "Supports xcconfig, plist, podspec, and gemspec files."
+        discussion: "Supports xcconfig, plist, podspec, and gemspec files.",
+        version: toolsVersion
     )
 
     @Argument(help: "Version component to bump: major, minor, or patch.")

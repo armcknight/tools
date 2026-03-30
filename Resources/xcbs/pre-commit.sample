@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Pre-commit hook for xcbs.
+# Copy this file to .git/hooks/pre-commit and make it executable.
+#
+# Runs xcbs to regenerate build settings lock files. If any settings
+# have changed (exit code 66), the commit is aborted so you can review
+# the updated lock files and explicitly include them in your commit.
+
+XCODEPROJ=$(find . -maxdepth 1 -name "*.xcodeproj" -print -quit)
+
+if [ -z "$XCODEPROJ" ]; then
+    echo "xcbs pre-commit: No .xcodeproj found in repository root, skipping."
+    exit 0
+fi
+
+xcbs "$XCODEPROJ"
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 66 ]; then
+    echo ""
+    echo "xcbs: Build settings have changed!"
+    echo "Review the updated .xcbs/*.lock files and add them to your commit."
+    exit 1
+fi
+
+exit $EXIT_CODE

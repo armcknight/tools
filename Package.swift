@@ -68,5 +68,8 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "GitKit", package: "git-kit"),
             ]),
+        .testTarget(
+            name: "SharedTests",
+            dependencies: ["Shared"]),
     ]
 )
