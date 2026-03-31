@@ -113,6 +113,7 @@ enum FileType {
     case plist
     case podspec
     case gemspec
+    case plaintext
 
     static func detect(from path: String) throws -> FileType {
         let ext = (path as NSString).pathExtension.lowercased()
@@ -121,7 +122,7 @@ enum FileType {
         case "plist": return .plist
         case "podspec": return .podspec
         case "gemspec": return .gemspec
-        default: throw VrsnError.unsupportedFileType(ext)
+        default: return .plaintext
         }
     }
 
@@ -133,6 +134,8 @@ enum FileType {
             return numeric ? "CFBundleVersion" : "CFBundleShortVersionString"
         case .podspec, .gemspec:
             return "version"
+        case .plaintext:
+            return ""
         }
     }
 
@@ -148,6 +151,13 @@ enum FileType {
             return value
         case .podspec, .gemspec:
             return try readFromTextFile(path: path, key: key, separator: "=", commentPrefix: "#")
+        case .plaintext:
+            let content = try String(contentsOfFile: path, encoding: .utf8)
+            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                throw VrsnError.noVersionFound("", path)
+            }
+            return trimmed
         }
     }
 
@@ -165,6 +175,8 @@ enum FileType {
             }
         case .podspec, .gemspec:
             try writeToTextFile(path: path, key: key, value: "'\(version)'", separator: "=", commentPrefix: "#")
+        case .plaintext:
+            try FileHelpers.write(version + "\n", to: path)
         }
     }
 
