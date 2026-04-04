@@ -28,9 +28,9 @@ struct UploadSymbols: AsyncParsableCommand {
             return
         }
 
-        // Verify sentry-cli is installed
-        let whichResult = await Shell.runOptional("which", arguments: ["sentry-cli"])
-        guard whichResult.success else {
+        // Find sentry-cli
+        let sentryCLI = await findSentryCLI()
+        guard let sentryCLI else {
             throw UploadSymbolsError.sentryCLINotFound
         }
 
@@ -46,7 +46,7 @@ struct UploadSymbols: AsyncParsableCommand {
             throw UploadSymbolsError.missingDsymPath
         }
 
-        try await Shell.run("sentry-cli", arguments: [
+        try await Shell.run(sentryCLI, arguments: [
             "upload-dif",
             "--force-foreground",
             "--include-sources",
@@ -90,6 +90,24 @@ struct UploadSymbols: AsyncParsableCommand {
         if let value = readFromDotenv(key: "SENTRY_AUTH_TOKEN", path: dotenvPath) { return value }
 
         throw UploadSymbolsError.missingConfig("SENTRY_AUTH_TOKEN")
+    }
+
+    private func findSentryCLI() async -> String? {
+        let searchPaths = [
+            "/opt/homebrew/bin/sentry-cli",
+            "/usr/local/bin/sentry-cli",
+        ]
+        for path in searchPaths {
+            if FileManager.default.isExecutableFile(atPath: path) {
+                return path
+            }
+        }
+        // Fall back to PATH
+        let result = await Shell.runOptional("which", arguments: ["sentry-cli"])
+        if result.success, !result.output.isEmpty {
+            return result.output
+        }
+        return nil
     }
 
     private func readFromDotenv(key: String, path: String) -> String? {
