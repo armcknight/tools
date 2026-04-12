@@ -7,8 +7,9 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | Tool | Description |
 |------|-------------|
 | `migrate-changelog` | Move Unreleased changelog entries to a new versioned section |
-| `changetag` | Extract changelog sections and write them as git tag annotations |
-| `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec files |
+| `changetag` | Extract changelog sections and write them as annotated git tags |
+| `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec, and Swift files |
+| `prepare-release` | Bump version, migrate changelog, and create an annotated git tag in one step |
 | `xcbs` | Dump fully-resolved Xcode build settings to lock files for diffing |
 | `psst` | Inject secrets from a values file, env vars, or macOS Keychain into source placeholders |
 | `inject-git-info` | Write git SHA, branch, and clean status into Info.plist (Xcode build phase) |
@@ -41,6 +42,24 @@ swift build -c release --product vrsn
 cp .build/release/vrsn /usr/local/bin/
 ```
 
+## Development
+
+### Building and testing
+
+```bash
+make build   # Release build
+make test    # Run unit and integration tests
+```
+
+### Versioning and releasing
+
+```bash
+make bump-patch   # Bump patch version, migrate changelog, tag
+make bump-minor   # Bump minor version, migrate changelog, tag
+make bump-major   # Bump major version, migrate changelog, tag
+make release      # Build release binaries
+```
+
 ## Usage
 
 Every tool supports `--help` and `--version`.
@@ -56,7 +75,7 @@ migrate-changelog CHANGELOG.md 1.2.0 --no-commit
 
 ```
 changetag CHANGELOG.md 1.2.0
-changetag CHANGELOG.md 1.2.0 --force
+changetag CHANGELOG.md 1.2.0 --commit --message "bump version to 1.2.0"
 changetag CHANGELOG.md v1.2.0 --name 1.2.0
 ```
 
@@ -68,8 +87,17 @@ vrsn minor -f Config.xcconfig -k CURRENT_PROJECT_VERSION
 vrsn patch -f Info.plist
 vrsn -n -f Config.xcconfig                  # bump numeric version
 vrsn -r -f Config.xcconfig                  # read current version
-vrsn -t major -f Config.xcconfig             # dry run
+vrsn major -t -f Config.xcconfig            # dry run
 vrsn -u 2.0.0-beta.1 -f Config.xcconfig     # set custom version
+vrsn patch -f Sources/Shared/Version.swift -k toolsVersion   # Swift file
+```
+
+### prepare-release
+
+```
+prepare-release patch --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release
+prepare-release minor --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release
+prepare-release major --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release --changelog CHANGELOG.md
 ```
 
 ### xcbs
