@@ -1,0 +1,21 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+These tools are a Swift rewrite of a previous collection of Ruby scripts hosted at https://github.com/tworingsoft/tools.
+
+### Added
+- `vrsn` — bump version numbers in xcconfig, plist, podspec, gemspec, and Swift source files; supports major/minor/patch components, numeric (integer) mode, custom strings, dry-run, and read modes
+- `migrate-changelog` — move Unreleased changelog entries to a new versioned section dated today; `--no-commit` leaves changes staged without committing
+- `changetag` — extract release notes from a changelog section and write them into an annotated git tag; `--commit` stages all working tree changes and commits them with a provided message before tagging
+- `prepare-release` — orchestrate a full semantic version release: bumps the version file, migrates the changelog, and creates an annotated tag in one step
+- `inject-git-info` — inject commit hash, branch name, and clean-status into a built Info.plist at Xcode build time; designed for use as an Xcode Run Script build phase
+- `tag-icons` — overlay version number, commit hash, or custom text onto app icon images using CoreGraphics; supports commit, version, custom, and cleanup modes; designed for use as an Xcode Run Script build phase
+- `upload-symbols` — upload dSYM files to Sentry; resolves credentials from environment variables, `.sentryclirc`, or `.env`
+- `psst` — inject secrets into source file placeholders; resolves values from `.psst/values`, environment variables, or a macOS keychain file
+- `xcbs` — dump fully-resolved Xcode build settings to per-scheme lock files for diffing across configurations; exits with code 66 if settings changed since the last run
