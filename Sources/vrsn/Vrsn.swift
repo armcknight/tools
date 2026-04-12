@@ -113,6 +113,7 @@ enum FileType {
     case plist
     case podspec
     case gemspec
+    case swift
     case plaintext
 
     static func detect(from path: String) throws -> FileType {
@@ -122,6 +123,7 @@ enum FileType {
         case "plist": return .plist
         case "podspec": return .podspec
         case "gemspec": return .gemspec
+        case "swift": return .swift
         default: return .plaintext
         }
     }
@@ -134,7 +136,7 @@ enum FileType {
             return numeric ? "CFBundleVersion" : "CFBundleShortVersionString"
         case .podspec, .gemspec:
             return "version"
-        case .plaintext:
+        case .swift, .plaintext:
             return ""
         }
     }
@@ -151,6 +153,8 @@ enum FileType {
             return value
         case .podspec, .gemspec:
             return try readFromTextFile(path: path, key: key, separator: "=", commentPrefix: "#")
+        case .swift:
+            return try readFromTextFile(path: path, key: key, separator: " = ", commentPrefix: "//")
         case .plaintext:
             let content = try String(contentsOfFile: path, encoding: .utf8)
             let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -175,6 +179,8 @@ enum FileType {
             }
         case .podspec, .gemspec:
             try writeToTextFile(path: path, key: key, value: "'\(version)'", separator: "=", commentPrefix: "#")
+        case .swift:
+            try writeToTextFile(path: path, key: key, value: "\"\(version)\"", separator: " = ", commentPrefix: "//")
         case .plaintext:
             try FileHelpers.write(version + "\n", to: path)
         }
