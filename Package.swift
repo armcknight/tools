@@ -31,6 +31,12 @@ let package = Package(
                 .product(name: "GitKit", package: "git-kit"),
             ]),
         .executableTarget(
+            name: "prepare-release",
+            dependencies: [
+                "Shared",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]),
+        .executableTarget(
             name: "vrsn",
             dependencies: [
                 "Shared",
