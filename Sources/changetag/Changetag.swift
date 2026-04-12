@@ -19,8 +19,11 @@ struct Changetag: ParsableCommand {
     @Option(name: .shortAndLong, help: "Override the changelog entry name if it differs from the tag name.")
     var name: String?
 
-    @Flag(name: .shortAndLong, help: "Overwrite an existing tag annotation.")
-    var force = false
+    @Flag(name: .long, help: "Stage all working tree changes and commit them before tagging.")
+    var commit = false
+
+    @Option(name: [.customShort("m"), .long], help: "Commit message. Required when --commit is used.")
+    var message: String?
 
     func run() throws {
         let git = Git()
@@ -33,15 +36,9 @@ struct Changetag: ParsableCommand {
         }
 
         // Check existing tag
-        let existingAnnotation: String? = {
-            guard let result = try? git.run(.raw("tag -n \(tagName)")),
-                  !result.isEmpty, result != tagName else { return nil }
-            return result
-        }()
-
-        let tagExists = existingAnnotation != nil
-        if tagExists && !force {
-            throw ChangetagError.annotationExists(tagName)
+        if let result = try? git.run(.raw("tag -n \(tagName)")),
+           !result.isEmpty, result != tagName {
+            throw ChangetagError.tagExists(tagName)
         }
 
         let lines = try FileHelpers.readLines(changelogPath)
@@ -70,13 +67,16 @@ struct Changetag: ParsableCommand {
             return line
         }
 
-        let message = entryLines.joined(separator: "\n").escapedForShell
-
-        if tagExists {
-            try git.run(.raw("tag \(tagName) \(tagName) -f -m \"\(message)\""))
-        } else {
-            try git.run(.raw("tag \(tagName) -m \"\(message)\""))
+        if commit {
+            guard let commitMessage = message else {
+                throw ChangetagError.missingCommitMessage
+            }
+            try git.run(.addAll)
+            try git.run(.commit(message: commitMessage))
         }
+
+        let tagMessage = entryLines.joined(separator: "\n").escapedForShell
+        try git.run(.raw("tag \(tagName) -m \"\(tagMessage)\""))
 
         print("Tagged \(tagName) with changelog entry for \(entryName)")
     }
@@ -92,17 +92,20 @@ private extension String {
 
 enum ChangetagError: LocalizedError {
     case invalidChangelogPath(String)
-    case annotationExists(String)
+    case tagExists(String)
     case entryNotFound(String)
+    case missingCommitMessage
 
     var errorDescription: String? {
         switch self {
         case .invalidChangelogPath(let path):
             return "The path '\(path)' does not point to a valid file."
-        case .annotationExists(let tag):
-            return "The tag \(tag) already has an annotation. Use -f/--force to overwrite."
+        case .tagExists(let tag):
+            return "Tag '\(tag)' already exists."
         case .entryNotFound(let name):
             return "Could not find an entry in the changelog named '\(name)'."
+        case .missingCommitMessage:
+            return "--message is required when --commit is used."
         }
     }
 }
