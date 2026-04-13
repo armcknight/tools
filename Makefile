@@ -10,6 +10,16 @@ FORMULA_PATTERN = tag: "([^"]+)"
 build:
 	swift build -c release
 
+# MARK: - Install
+
+.PHONY: install
+install: build
+	@BREW_PREFIX=$$(brew --prefix) && \
+	for tool in changetag inject-git-info migrate-changelog prepare-github-release prepare-release psst tag-icons upload-symbols vrsn xcbs; do \
+		install .build/release/$$tool $$BREW_PREFIX/bin/; \
+	done
+	@echo "Installed tools to $$(brew --prefix)/bin"
+
 # MARK: - Testing
 
 .PHONY: test
