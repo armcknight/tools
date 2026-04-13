@@ -1,6 +1,14 @@
 TOOLS_BIN = .build/release
 VERSION_FILE = Sources/Shared/Version.swift
 VERSION_KEY = toolsVersion
+FORMULA_PATH = homebrew-tools/tools.rb
+FORMULA_PATTERN = tag: "([^"]+)"
+
+# MARK: - Setup
+
+.PHONY: init
+init:
+	git submodule update --init --recursive
 
 # MARK: - Dev tooling
 
@@ -31,3 +39,7 @@ bump-major:
 
 .PHONY: release
 release: build
+	@NEW_VERSION=$$($(TOOLS_BIN)/vrsn -r -f $(VERSION_FILE) -k $(VERSION_KEY)) && \
+	git push && git push origin "$$NEW_VERSION" && \
+	$(TOOLS_BIN)/vrsn -u "$$NEW_VERSION" -f $(FORMULA_PATH) -p '$(FORMULA_PATTERN)' && \
+	cd homebrew-tools && git add tools.rb && git commit -m "update to $$NEW_VERSION" && git push && cd ..
