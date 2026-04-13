@@ -37,6 +37,12 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]),
         .executableTarget(
+            name: "prepare-github-release",
+            dependencies: [
+                "Shared",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]),
+        .executableTarget(
             name: "vrsn",
             dependencies: [
                 "Shared",

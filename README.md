@@ -10,6 +10,7 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `changetag` | Extract changelog sections and write them as annotated git tags |
 | `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec, Swift, and arbitrary files (via regex) |
 | `prepare-release` | Bump version, migrate changelog, and create an annotated git tag in one step |
+| `prepare-github-release` | Create a GitHub release from a git tag with changelog-derived release notes |
 | `xcbs` | Dump fully-resolved Xcode build settings to lock files for diffing |
 | `psst` | Inject secrets from a values file, env vars, or macOS Keychain into source placeholders |
 | `inject-git-info` | Write git SHA, branch, and clean status into Info.plist (Xcode build phase) |
@@ -84,6 +85,15 @@ vrsn patch -f Formula/tools.rb -p 'tag: "([^"]+)"'          # regex pattern for 
 prepare-release patch --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release
 prepare-release minor --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release
 prepare-release major --file Config.xcconfig --key MARKETING_VERSION --tools-bin .build/release --changelog CHANGELOG.md
+```
+
+### prepare-github-release
+
+```
+prepare-github-release 1.2.0                          # create release from tag with changelog notes
+prepare-github-release 1.2.0 --draft                  # create as draft
+prepare-github-release 1.2.0 --prerelease             # mark as prerelease
+prepare-github-release 1.2.0 --changelog path/to/CHANGELOG.md
 ```
 
 ### xcbs

@@ -32,6 +32,7 @@ deploy: build
 	$(TOOLS_BIN)/prepare-release $(BUMP) --file $(VERSION_FILE) --key $(VERSION_KEY) --tools-bin $(TOOLS_BIN) && \
 	NEW_VERSION=$$($(TOOLS_BIN)/vrsn -r -f $(VERSION_FILE) -k $(VERSION_KEY)) && \
 	git push && git push origin "$$NEW_VERSION" && \
+	$(TOOLS_BIN)/prepare-github-release "$$NEW_VERSION" && \
 	$(TOOLS_BIN)/vrsn -u "$$NEW_VERSION" -f $(FORMULA_PATH) -p '$(FORMULA_PATTERN)' && \
 	cd homebrew-tools && git add tools.rb && git commit -m "update to $$NEW_VERSION" && git push && cd .. && \
 	git add homebrew-tools && git commit -m "update homebrew-tools submodule to $$NEW_VERSION" && git push ; \
