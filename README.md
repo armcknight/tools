@@ -37,13 +37,12 @@ make build   # Release build
 make test    # Run unit and integration tests
 ```
 
-### Versioning and releasing
+### Releasing
 
 ```bash
-make bump-patch   # Bump patch version, migrate changelog, tag
-make bump-minor   # Bump minor version, migrate changelog, tag
-make bump-major   # Bump major version, migrate changelog, tag
-make release      # Build release binaries
+make deploy BUMP=patch   # Build, bump version, migrate changelog, tag, push, update Homebrew formula
+make deploy BUMP=minor
+make deploy BUMP=major
 ```
 
 ## Usage
