@@ -1,2 +1,2 @@
 /// The version of the tools package.
-public let toolsVersion = "0.1.0"
+public let toolsVersion = "1.0.0"

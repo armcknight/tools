@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] 2026-04-12
+
 These tools are a Swift rewrite of a previous collection of Ruby scripts hosted at https://github.com/tworingsoft/tools.
 
 ### Added
