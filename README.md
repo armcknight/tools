@@ -38,6 +38,15 @@ make build   # Release build
 make test    # Run unit and integration tests
 ```
 
+### Local install
+
+```bash
+make install    # Build and install dev binaries (unlinks Homebrew version)
+make uninstall  # Remove dev binaries and restore Homebrew version
+```
+
+`make install` replaces the Homebrew-managed binaries with locally built ones for testing. `make uninstall` reverses this by re-linking the Homebrew version.
+
 ### Releasing
 
 ```bash

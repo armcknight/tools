@@ -14,11 +14,21 @@ build:
 
 .PHONY: install
 install: build
+	brew unlink tools 2>/dev/null || true
 	@BREW_PREFIX=$$(brew --prefix) && \
 	for tool in changetag inject-git-info migrate-changelog prepare-github-release prepare-release psst tag-icons upload-symbols vrsn xcbs; do \
 		install .build/release/$$tool $$BREW_PREFIX/bin/; \
 	done
-	@echo "Installed tools to $$(brew --prefix)/bin"
+	@echo "Installed dev tools to $$(brew --prefix)/bin (run 'brew link tools' to restore Homebrew version)"
+
+.PHONY: uninstall
+uninstall:
+	@BREW_PREFIX=$$(brew --prefix) && \
+	for tool in changetag inject-git-info migrate-changelog prepare-github-release prepare-release psst tag-icons upload-symbols vrsn xcbs; do \
+		rm -f $$BREW_PREFIX/bin/$$tool; \
+	done
+	brew link tools 2>/dev/null || true
+	@echo "Restored Homebrew-managed tools"
 
 # MARK: - Testing
 
