@@ -1,3 +1,0 @@
-[submodule "homebrew-tools"]
-	path = homebrew-tools
-	url = git@github.com:armcknight/homebrew-tools.git
