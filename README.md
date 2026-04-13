@@ -8,7 +8,7 @@ A collection of developer tools for Apple platform projects, all written in Swif
 |------|-------------|
 | `migrate-changelog` | Move Unreleased changelog entries to a new versioned section |
 | `changetag` | Extract changelog sections and write them as annotated git tags |
-| `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec, and Swift files |
+| `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec, Swift, and arbitrary files (via regex) |
 | `prepare-release` | Bump version, migrate changelog, and create an annotated git tag in one step |
 | `xcbs` | Dump fully-resolved Xcode build settings to lock files for diffing |
 | `psst` | Inject secrets from a values file, env vars, or macOS Keychain into source placeholders |
@@ -23,23 +23,9 @@ A collection of developer tools for Apple platform projects, all written in Swif
 
 ## Installation
 
-Build all tools:
-
 ```
-swift build -c release
-```
-
-Binaries are output to `.build/release/`. Copy individual tools to a directory on your `$PATH`:
-
-```
-cp .build/release/vrsn /usr/local/bin/
-```
-
-Or build and install a specific tool:
-
-```
-swift build -c release --product vrsn
-cp .build/release/vrsn /usr/local/bin/
+brew tap armcknight/tools
+brew install armcknight/tools/tools
 ```
 
 ## Development
@@ -90,6 +76,7 @@ vrsn -r -f Config.xcconfig                  # read current version
 vrsn major -t -f Config.xcconfig            # dry run
 vrsn -u 2.0.0-beta.1 -f Config.xcconfig     # set custom version
 vrsn patch -f Sources/Shared/Version.swift -k toolsVersion   # Swift file
+vrsn patch -f Formula/tools.rb -p 'tag: "([^"]+)"'          # regex pattern for any file format
 ```
 
 ### prepare-release

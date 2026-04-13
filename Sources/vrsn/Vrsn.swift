@@ -6,7 +6,7 @@ import Shared
 struct Vrsn: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Bump version numbers in project files.",
-        discussion: "Supports xcconfig, plist, podspec, and gemspec files.",
+        discussion: "Supports xcconfig, plist, podspec, gemspec, Swift, and plaintext files. Use --pattern with a capture group for arbitrary file formats.",
         version: toolsVersion
     )
 
@@ -40,6 +40,9 @@ struct Vrsn: ParsableCommand {
     @Option(name: [.customShort("i"), .customLong("identifier")], help: "Prerelease identifier to append.")
     var identifier: String?
 
+    @Option(name: [.customShort("p"), .long], help: "Regex pattern with a capture group to locate the version in plaintext files.")
+    var pattern: String?
+
     func run() throws {
         let fileType = try FileType.detect(from: file)
         let resolvedKey = key ?? fileType.defaultKey(numeric: numeric)
@@ -49,7 +52,7 @@ struct Vrsn: ParsableCommand {
         if let override = currentVersion {
             currentVersionString = override
         } else {
-            currentVersionString = try fileType.readVersion(from: file, key: resolvedKey)
+            currentVersionString = try fileType.readVersion(from: file, key: resolvedKey, pattern: pattern)
         }
 
         if readVersion {
@@ -94,7 +97,7 @@ struct Vrsn: ParsableCommand {
             return
         }
 
-        try fileType.writeVersion(newVersion, to: file, key: resolvedKey)
+        try fileType.writeVersion(newVersion, to: file, key: resolvedKey, pattern: pattern)
         print(newVersion)
     }
 
@@ -141,7 +144,7 @@ enum FileType {
         }
     }
 
-    func readVersion(from path: String, key: String) throws -> String {
+    func readVersion(from path: String, key: String, pattern: String? = nil) throws -> String {
         switch self {
         case .xcconfig:
             return try readFromTextFile(path: path, key: key, separator: " = ", commentPrefix: "//")
@@ -157,6 +160,9 @@ enum FileType {
             return try readFromTextFile(path: path, key: key, separator: " = ", commentPrefix: "//")
         case .plaintext:
             let content = try String(contentsOfFile: path, encoding: .utf8)
+            if let pattern {
+                return try readWithRegex(content: content, pattern: pattern, path: path)
+            }
             let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else {
                 throw VrsnError.noVersionFound("", path)
@@ -165,7 +171,7 @@ enum FileType {
         }
     }
 
-    func writeVersion(_ version: String, to path: String, key: String) throws {
+    func writeVersion(_ version: String, to path: String, key: String, pattern: String? = nil) throws {
         switch self {
         case .xcconfig:
             try writeToTextFile(path: path, key: key, value: version, separator: " = ", commentPrefix: "//")
@@ -182,8 +188,38 @@ enum FileType {
         case .swift:
             try writeToTextFile(path: path, key: key, value: "\"\(version)\"", separator: " = ", commentPrefix: "//")
         case .plaintext:
-            try FileHelpers.write(version + "\n", to: path)
+            if let pattern {
+                let content = try String(contentsOfFile: path, encoding: .utf8)
+                let updated = try writeWithRegex(content: content, pattern: pattern, version: version, path: path)
+                try FileHelpers.write(updated, to: path)
+            } else {
+                try FileHelpers.write(version + "\n", to: path)
+            }
         }
+    }
+
+    private func readWithRegex(content: String, pattern: String, path: String) throws -> String {
+        let regex = try NSRegularExpression(pattern: pattern)
+        let range = NSRange(content.startIndex..., in: content)
+        guard let match = regex.firstMatch(in: content, range: range),
+              match.numberOfRanges >= 2,
+              let captureRange = Range(match.range(at: 1), in: content) else {
+            throw VrsnError.noVersionFound(pattern, path)
+        }
+        return String(content[captureRange])
+    }
+
+    private func writeWithRegex(content: String, pattern: String, version: String, path: String) throws -> String {
+        let regex = try NSRegularExpression(pattern: pattern)
+        let range = NSRange(content.startIndex..., in: content)
+        guard let match = regex.firstMatch(in: content, range: range),
+              match.numberOfRanges >= 2,
+              let captureRange = Range(match.range(at: 1), in: content) else {
+            throw VrsnError.noVersionFound(pattern, path)
+        }
+        var result = content
+        result.replaceSubrange(captureRange, with: version)
+        return result
     }
 
     private func readFromTextFile(path: String, key: String, separator: String, commentPrefix: String) throws -> String {

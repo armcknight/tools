@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 These tools are a Swift rewrite of a previous collection of Ruby scripts hosted at https://github.com/tworingsoft/tools.
 
 ### Added
-- `vrsn` — bump version numbers in xcconfig, plist, podspec, gemspec, and Swift source files; supports major/minor/patch components, numeric (integer) mode, custom strings, dry-run, and read modes
+- `vrsn` — bump version numbers in xcconfig, plist, podspec, gemspec, and Swift source files; supports major/minor/patch components, numeric (integer) mode, custom strings, dry-run, read modes, and `--pattern` regex for arbitrary file formats
 - `migrate-changelog` — move Unreleased changelog entries to a new versioned section dated today; `--no-commit` leaves changes staged without committing
 - `changetag` — extract release notes from a changelog section and write them into an annotated git tag; `--commit` stages all working tree changes and commits them with a provided message before tagging
 - `prepare-release` — orchestrate a full semantic version release: bumps the version file, migrates the changelog, and creates an annotated tag in one step
