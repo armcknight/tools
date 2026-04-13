@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `prepare-release` no longer requires `--tools-bin`; tools are resolved from PATH (Homebrew install)
+
 ## [1.1.0] 2026-04-12
 
 ### Added

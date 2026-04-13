@@ -18,22 +18,15 @@ struct PrepareRelease: AsyncParsableCommand {
     @Option(name: [.customShort("k"), .long], help: "Key mapping to the version in the file.")
     var key: String
 
-    @Option(name: .long, help: "Directory containing the vrsn, migrate-changelog, and changetag binaries.")
-    var toolsBin: String
-
     @Option(name: [.customShort("l"), .long], help: "Path to the changelog file.")
     var changelog: String = "CHANGELOG.md"
 
     func run() async throws {
-        let vrsn = "\(toolsBin)/vrsn"
-        let migrateChangelog = "\(toolsBin)/migrate-changelog"
-        let changetag = "\(toolsBin)/changetag"
-
-        let currentVersion = try await Shell.run(vrsn, arguments: ["-r", "-f", file, "-k", key])
-        let newVersion = try await Shell.run(vrsn, arguments: [component, "-t", "-f", file, "-k", key])
-        try await Shell.run(vrsn, arguments: [component, "-f", file, "-k", key])
-        try await Shell.run(migrateChangelog, arguments: [changelog, newVersion, "--no-commit"])
-        try await Shell.run(changetag, arguments: [
+        let currentVersion = try await Shell.run("vrsn", arguments: ["-r", "-f", file, "-k", key])
+        let newVersion = try await Shell.run("vrsn", arguments: [component, "-t", "-f", file, "-k", key])
+        try await Shell.run("vrsn", arguments: [component, "-f", file, "-k", key])
+        try await Shell.run("migrate-changelog", arguments: [changelog, newVersion, "--no-commit"])
+        try await Shell.run("changetag", arguments: [
             changelog, newVersion,
             "--commit", "--message", "bump version from \(currentVersion) to \(newVersion)",
         ])
