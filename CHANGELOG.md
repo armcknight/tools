@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] 2026-04-16
+
 ### Added
 - `prepare-release rc` — create a release candidate tag (`<version>-RC<N>`) from the `[Unreleased]` changelog section without bumping the version or migrating the changelog; RC number is auto-detected from existing tags or overridden with `--rc-number`
 - `prepare-release --build-number <N>` — append semver build metadata (`+N`) to the changelog entry heading and git tag in both release and RC modes; the version file itself is not affected (mirrors iOS `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` separation)
