@@ -16,7 +16,7 @@ struct Changetag: ParsableCommand {
     @Argument(help: "Git tag name.")
     var tagName: String
 
-    @Option(name: .shortAndLong, help: "Override the changelog entry name if it differs from the tag name.")
+    @Option(name: .shortAndLong, help: "Look up this changelog section name instead of the tag name. The tag annotation title is always the tag name.")
     var name: String?
 
     @Flag(name: .long, help: "Stage all working tree changes and commit them before tagging.")
@@ -56,8 +56,8 @@ struct Changetag: ParsableCommand {
         var entryLines = Array(lines[startIdx..<endIdx])
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
 
-        // Replace the heading line with just the tag name
-        entryLines[0] = entryName
+        // Replace the heading line with the tag name
+        entryLines[0] = tagName
 
         // Strip two leading # from markdown headings (they were at ## level)
         entryLines = entryLines.map { line in

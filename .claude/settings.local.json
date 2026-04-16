@@ -6,7 +6,8 @@
       "Bash(gh api:*)",
       "WebSearch",
       "Bash(swift build:*)",
-      "Bash(git ls-remote:*)"
+      "Bash(git ls-remote:*)",
+      "Bash(swift test *)"
     ]
   }
 }
