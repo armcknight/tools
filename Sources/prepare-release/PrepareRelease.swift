@@ -5,18 +5,18 @@ import Shared
 @main
 struct PrepareRelease: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Bump a semantic version, migrate the changelog, and tag the release.",
+        abstract: "Migrate the changelog, tag the release, and optionally push and create a GitHub release.",
         version: toolsVersion
     )
 
-    @Argument(help: "Version component to bump: patch, minor, major, or rc (release candidate).")
-    var component: String
+    @Argument(help: "Pass 'rc' to create a release candidate tag. Omit for a final release.")
+    var component: String?
 
     @Option(name: [.customShort("f"), .long], help: "Path to the file containing the version.")
     var file: String
 
-    @Option(name: [.customShort("k"), .long], help: "Key mapping to the version in the file.")
-    var key: String
+    @Option(name: [.customShort("k"), .long], help: "Key mapping to the version in the file. Optional for plain version files (e.g. a bare VERSION file).")
+    var key: String?
 
     @Option(name: [.customShort("l"), .long], help: "Path to the changelog file.")
     var changelog: String = "CHANGELOG.md"
@@ -24,7 +24,10 @@ struct PrepareRelease: AsyncParsableCommand {
     @Option(name: [.customShort("b"), .customLong("build-number")], help: "Build number to append as semver metadata (+N) in the changelog entry and git tag. The version file is not affected.")
     var buildNumber: Int?
 
-    @Option(name: [.customShort("n"), .customLong("rc-number")], help: "Override the release candidate number (default: auto-detected by counting existing RC tags for the current version).")
+    @Option(name: .long, help: "Key for the build number in --file. When set, prepare-release increments the numeric value at this key via vrsn and uses the result as the build number. Supersedes --build-number.")
+    var buildNumberKey: String?
+
+    @Option(name: [.customShort("n"), .customLong("rc-number")], help: "Override the release candidate number (default: auto-detected from consecutive RC sections in the changelog).")
     var rcNumber: Int?
 
     @Flag(name: .long, help: "Push the commit and tag to the remote after tagging.")
@@ -37,35 +40,48 @@ struct PrepareRelease: AsyncParsableCommand {
     var prerelease = false
 
     func run() async throws {
-        let isRC = component.lowercased() == "rc"
-        let currentVersion = try await Shell.run("vrsn", arguments: ["-r", "-f", file, "-k", key])
+        let isRC = component?.lowercased() == "rc"
+        let currentVersion = try await Shell.run("vrsn", arguments: vrsnReadArgs())
 
-        // Determine tag version, and bump the version file for non-RC releases.
+        // Validate that the marketing version has been bumped since the last release.
+        // Uses the changelog as the source of truth — compares against the most recent
+        // non-RC section header so that multiple RCs in the same cycle don't require
+        // re-bumping between deploys.
+        try validateVersionBumped(currentVersion: currentVersion)
+
+        // Auto-increment the build number if --build-number-key was given.
+        // vrsn prints the new value after writing, so one call does both.
+        var resolvedBuildNumber = buildNumber
+        if let bnKey = buildNumberKey {
+            let newBuild = try await Shell.run("vrsn", arguments: ["-n", "-f", file, "-k", bnKey])
+            resolvedBuildNumber = Int(newBuild.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+
+        // Determine tag version.
+        // RC: append -RCn (and optional +build). Version was already bumped externally.
+        // Release: use the current version as-is (also already bumped externally).
         let tagVersion: String
         if isRC {
             let n: Int
             if let override = rcNumber {
                 n = override
             } else {
-                let existing = try await Shell.run("git", arguments: ["tag", "--list", "\(currentVersion)-RC*"])
-                n = existing.isEmpty ? 1 : existing.split(separator: "\n").count + 1
+                n = try nextRCNumber()
             }
             let base = "\(currentVersion)-RC\(n)"
-            tagVersion = buildNumber.map { "\(base)+\($0)" } ?? base
+            tagVersion = resolvedBuildNumber.map { "\(base)+\($0)" } ?? base
         } else {
-            let coreVersion = try await Shell.run("vrsn", arguments: [component, "-t", "-f", file, "-k", key])
-            tagVersion = buildNumber.map { "\(coreVersion)+\($0)" } ?? coreVersion
-            try await Shell.run("vrsn", arguments: [component, "-f", file, "-k", key])
+            tagVersion = resolvedBuildNumber.map { "\(currentVersion)+\($0)" } ?? currentVersion
         }
 
         // Migrate the changelog.
         // RC: move [Unreleased] → [tagVersion].
-        // Release: consolidate any [currentVersion-RC*] sections into [tagVersion],
+        // Release: consolidate any consecutive -RC* sections into [tagVersion],
         //          falling back to normal Unreleased migration if no RC cycle exists.
         if isRC {
             try await Shell.run("migrate-changelog", arguments: [changelog, tagVersion, "--no-commit"])
-        } else if try hasRCEntries(for: currentVersion) {
-            try consolidateRCEntries(currentVersion: currentVersion, tagVersion: tagVersion)
+        } else if try hasRCEntries() {
+            try consolidateRCEntries(tagVersion: tagVersion)
         } else {
             try await Shell.run("migrate-changelog", arguments: [changelog, tagVersion, "--no-commit"])
         }
@@ -73,7 +89,7 @@ struct PrepareRelease: AsyncParsableCommand {
         // Commit all staged changes and create an annotated tag.
         let commitMessage = isRC
             ? "tag release candidate \(tagVersion)"
-            : "bump version from \(currentVersion) to \(tagVersion)"
+            : "tag release \(tagVersion)"
 
         try await Shell.run("changetag", arguments: [
             changelog, tagVersion,
@@ -94,17 +110,87 @@ struct PrepareRelease: AsyncParsableCommand {
         print(tagVersion)
     }
 
-    // MARK: - Changelog helpers
+    // MARK: - vrsn argument builder
 
-    private func hasRCEntries(for version: String) throws -> Bool {
-        let lines = try FileHelpers.readLines(changelog)
-        return lines.contains { $0.hasPrefix("## [") && $0.contains("[\(version)-RC") }
+    private func vrsnReadArgs() -> [String] {
+        var args = ["-r", "-f", file]
+        if let k = key { args += ["-k", k] }
+        return args
     }
 
-    /// Combines all `[currentVersion-RC*]` sections (plus any remaining [Unreleased] content)
+    // MARK: - Changelog helpers
+
+    /// Validates that the current version in the version file differs from the most recent
+    /// non-RC release section in the changelog. Errors if they match, meaning the version
+    /// was not bumped before deploying (e.g. run `make patch`, `make minor`, or `make major`).
+    private func validateVersionBumped(currentVersion: String) throws {
+        let lines = try FileHelpers.readLines(changelog)
+        guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }) else {
+            return // No changelog structure to validate against
+        }
+        // Skip past any RC sections to find the most recent final release section.
+        var i = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## [") }) ?? lines.endIndex
+        while i < lines.count, lines[i].hasPrefix("## ["), lines[i].contains("-RC") {
+            i = lines[(i + 1)...].firstIndex(where: { $0.hasPrefix("## [") }) ?? lines.endIndex
+        }
+        guard i < lines.count, lines[i].hasPrefix("## [") else {
+            return // No previous release to compare against
+        }
+        let lastReleaseVersion = coreVersion(from: lines[i])
+        if currentVersion == lastReleaseVersion {
+            throw PrepareReleaseError.versionNotBumped(currentVersion)
+        }
+    }
+
+    /// Extracts the bare semantic version from a changelog section header,
+    /// stripping any `-RC<N>` suffix and `+<build>` metadata.
+    /// E.g. "## [1.3.0-RC2+42] 2025-01-01" → "1.3.0"
+    private func coreVersion(from header: String) -> String {
+        guard let open = header.firstIndex(of: "["),
+              let close = header[open...].firstIndex(of: "]") else { return "" }
+        var v = String(header[header.index(after: open)..<close])
+        if let r = v.range(of: #"-RC\d+"#, options: .regularExpression) { v = String(v[..<r.lowerBound]) }
+        if let p = v.firstIndex(of: "+") { v = String(v[..<p]) }
+        return v
+    }
+
+    /// Returns the next RC number by scanning consecutive `-RC*` sections immediately
+    /// after `[Unreleased]` in the changelog, regardless of their version prefix.
+    /// This keeps RC numbering sequential even when the base version changes mid-cycle.
+    private func nextRCNumber() throws -> Int {
+        let lines = try FileHelpers.readLines(changelog)
+        guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }) else {
+            return 1
+        }
+        var maxN = 0
+        var i = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
+        while i < lines.count, lines[i].hasPrefix("## ["), lines[i].contains("-RC") {
+            if let match = lines[i].range(of: #"-RC(\d+)"#, options: .regularExpression) {
+                let digits = lines[i][match].dropFirst(3).prefix(while: { $0.isNumber })
+                if let n = Int(digits) { maxN = max(maxN, n) }
+            }
+            i = lines[(i + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
+        }
+        return maxN + 1
+    }
+
+    /// Returns true if there are consecutive `-RC*` sections immediately after `[Unreleased]`,
+    /// regardless of their version prefix.
+    private func hasRCEntries() throws -> Bool {
+        let lines = try FileHelpers.readLines(changelog)
+        guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }),
+              let firstSection = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) else {
+            return false
+        }
+        return lines[firstSection].contains("-RC")
+    }
+
+    /// Combines all consecutive `-RC*` sections (plus any remaining [Unreleased] content)
     /// into a single new `[tagVersion]` section, then removes the RC sections.
-    private func consolidateRCEntries(currentVersion: String, tagVersion: String) throws {
-        var lines = try FileHelpers.readLines(changelog)
+    /// RC sections are collected by the `-RC` pattern regardless of version prefix,
+    /// so a cycle that moved from 1.2.4-RC1 → 1.3.0-RC2 → 2.0.0-RC3 consolidates correctly.
+    private func consolidateRCEntries(tagVersion: String) throws {
+        let lines = try FileHelpers.readLines(changelog)
 
         guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }) else {
             throw PrepareReleaseError.noUnreleasedSection
@@ -114,12 +200,12 @@ struct PrepareRelease: AsyncParsableCommand {
         let unreleasedContent = lines[(unreleasedIdx + 1)..<unreleasedBodyEnd]
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
 
-        // Collect RC sections in document order (newest RC appears first in the file).
+        // Collect consecutive RC sections in document order (newest RC appears first in the file).
         var rcRanges: [Range<Int>] = []
         var rcContents: [[String]] = []
         var i = unreleasedBodyEnd
         while i < lines.count {
-            guard lines[i].hasPrefix("## [") && lines[i].contains("[\(currentVersion)-RC") else { break }
+            guard lines[i].hasPrefix("## [") && lines[i].contains("-RC") else { break }
             let end = lines[(i + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
             rcRanges.append(i..<end)
             rcContents.append(lines[(i + 1)..<end].filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
@@ -152,11 +238,14 @@ struct PrepareRelease: AsyncParsableCommand {
 
 enum PrepareReleaseError: LocalizedError {
     case noUnreleasedSection
+    case versionNotBumped(String)
 
     var errorDescription: String? {
         switch self {
         case .noUnreleasedSection:
             return "Could not find '## [Unreleased]' section in changelog."
+        case .versionNotBumped(let v):
+            return "Version \(v) was already released. Run 'make patch', 'make minor', or 'make major' to bump before deploying."
         }
     }
 }

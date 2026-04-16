@@ -51,13 +51,31 @@ make uninstall  # Remove dev binaries and restore Homebrew version
 ### Releasing
 
 ```bash
+make patch                   # Bump patch version (must run before first deploy-beta in a cycle)
+make minor                   # Bump minor version
+make major                   # Bump major version
 make deploy-beta             # Tag an RC from [Unreleased], push, create GitHub prerelease
-make deploy BUMP=patch       # Bump patch, consolidate RC entries, tag, push, update Homebrew formula
-make deploy BUMP=minor
-make deploy BUMP=major
+make deploy                  # Consolidate RC entries, tag, push, update Homebrew formula
 ```
 
-`deploy-beta` can be run multiple times before a final release — each run creates the next `RC` tag (e.g. `1.0.0-RC1`, `1.0.0-RC2`). When `make deploy` runs, all RC changelog sections are consolidated into the final release entry.
+Version bumping and deploying are separate steps. Bump first, then deploy as many RCs as needed:
+
+```bash
+make minor                   # 1.2.3 → 1.3.0
+make deploy-beta             # tags 1.3.0-RC1
+make deploy-beta             # tags 1.3.0-RC2 (new RC, no version re-bump needed)
+make deploy                  # consolidates all RC sections into 1.3.0
+```
+
+To change the target version mid-cycle, bump again before the next RC:
+
+```bash
+make minor                   # 1.2.3 → 1.3.0
+make deploy-beta             # 1.3.0-RC1
+make major                   # 1.3.0 → 2.0.0  (scope grew)
+make deploy-beta             # 2.0.0-RC2
+make deploy                  # consolidates all RC sections into 2.0.0
+```
 
 ## Usage
 
@@ -94,28 +112,37 @@ vrsn patch -f Formula/tools.rb -p 'tag: "([^"]+)"'          # regex pattern for 
 
 ### prepare-release
 
-```
-# Bump patch/minor/major — migrates changelog, commits, tags, pushes, creates GitHub release
-prepare-release patch --file Sources/Shared/Version.swift --key toolsVersion --push --github-release
-prepare-release minor --file Sources/Shared/Version.swift --key toolsVersion --push --github-release
-prepare-release major --file Sources/Shared/Version.swift --key toolsVersion --push --github-release
+Version bumping is the caller's responsibility. Run `vrsn` (or `make patch/minor/major`) before calling `prepare-release`. It will error if the version in `--file` matches the most recent non-RC changelog section, catching the "forgot to bump" case.
 
-# Release candidate — tags [Unreleased] as RC without bumping the version file
+```
+# Final release — migrates changelog, commits, tags, pushes, creates GitHub release
+# (version must already be bumped in the file)
+prepare-release --file Sources/Shared/Version.swift --key toolsVersion --push --github-release
+
+# Plain VERSION file — --key is optional
+prepare-release --file VERSION --push --github-release
+
+# Release candidate — tags [Unreleased] as RC; pass rc as the first argument
 prepare-release rc --file Sources/Shared/Version.swift --key toolsVersion --push --github-release --prerelease
 
 # iOS-style: separate marketing version and build number
-# The build number is appended as semver metadata (+N) in the changelog entry and git tag only.
+# --build-number-key auto-increments CURRENT_PROJECT_VERSION and appends it as +N.
+prepare-release rc --file Config.xcconfig --key MARKETING_VERSION --build-number-key CURRENT_PROJECT_VERSION --push --github-release --prerelease
+prepare-release --file Config.xcconfig --key MARKETING_VERSION --build-number-key CURRENT_PROJECT_VERSION --push --github-release
+
+# Or supply the build number explicitly instead of auto-incrementing:
 prepare-release rc --file Config.xcconfig --key MARKETING_VERSION --build-number 42 --push --github-release --prerelease
-prepare-release patch --file Config.xcconfig --key MARKETING_VERSION --build-number 43 --push --github-release
 ```
 
 `prepare-release` prints the resolved tag name to stdout, so callers can capture it:
 
 ```bash
-NEW_VERSION=$(prepare-release patch --file ...)
+NEW_VERSION=$(prepare-release --file ...)
 ```
 
-RC tags are auto-numbered by counting existing RC tags for the current version. Use `--rc-number` to override.
+RC tags are auto-numbered by scanning consecutive RC sections in the changelog — numbering is sequential even when the base version changes mid-cycle (e.g. `1.2.4-RC1` → `1.3.0-RC2` → `2.0.0-RC3`). Use `--rc-number` to override.
+
+When a final release follows an RC cycle, `prepare-release` detects the existing RC sections and consolidates all of them into the final release entry regardless of their version prefix.
 
 ### prepare-github-release
 

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `prepare-release --build-number-key KEY` — auto-increments the numeric value at `KEY` in `--file` via `vrsn -n` and appends the result as semver build metadata (`+N`) in the changelog entry and git tag; supersedes `--build-number` when both are given
+- `prepare-release` validates that the marketing version was bumped before running, using the changelog as the source of truth (compares the version file against the most recent non-RC section header); errors with an actionable message if the version was not bumped
+
+### Changed
+- `prepare-release` no longer accepts `patch`, `minor`, or `major` as arguments and no longer bumps version files internally; version bumping is now the caller's responsibility (e.g. `make patch` / `make minor` / `make major`)
+- `prepare-release` component argument is now optional: pass `rc` for a release candidate, or omit it for a final release
+- `prepare-release --key` is now optional; when omitted, the version file is treated as a plain `VERSION`-style file containing only the version string (no `KEY = VALUE` format required)
+
 ## [3.0.0] 2026-04-16
 
 ### Added

@@ -39,6 +39,18 @@ test:
 
 # MARK: - Releasing
 
+.PHONY: patch
+patch:
+	vrsn patch -f $(VERSION_FILE) -k $(VERSION_KEY)
+
+.PHONY: minor
+minor:
+	vrsn minor -f $(VERSION_FILE) -k $(VERSION_KEY)
+
+.PHONY: major
+major:
+	vrsn major -f $(VERSION_FILE) -k $(VERSION_KEY)
+
 .PHONY: deploy-beta
 deploy-beta:
 	@{ \
@@ -47,9 +59,8 @@ deploy-beta:
 
 .PHONY: deploy
 deploy:
-	@test -n "$(BUMP)" || (echo "Usage: make deploy BUMP=patch|minor|major" && exit 1)
 	@{ \
-	NEW_VERSION=$$(prepare-release $(BUMP) --file $(VERSION_FILE) --key $(VERSION_KEY) --push --github-release) && \
+	NEW_VERSION=$$(prepare-release --file $(VERSION_FILE) --key $(VERSION_KEY) --push --github-release) && \
 	git clone git@github.com:armcknight/homebrew-tools.git homebrew-tools && \
 	vrsn -u "$$NEW_VERSION" -f $(FORMULA_PATH) -p '$(FORMULA_PATTERN)' && \
 	cd homebrew-tools && git add tools.rb && git commit -m "update to $$NEW_VERSION" && git push && cd .. && \
