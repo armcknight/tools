@@ -108,6 +108,8 @@ vrsn major -t -f Config.xcconfig            # dry run
 vrsn -u 2.0.0-beta.1 -f Config.xcconfig     # set custom version
 vrsn patch -f Sources/Shared/Version.swift -k toolsVersion   # Swift file
 vrsn patch -f Formula/tools.rb -p 'tag: "([^"]+)"'          # regex pattern for any file format
+vrsn minor -f Config.xcconfig -k MARKETING_VERSION --commit  # bump and commit in one step
+vrsn minor -f Config.xcconfig -k MARKETING_VERSION --commit --stash  # stash other staged changes first
 ```
 
 ### prepare-release

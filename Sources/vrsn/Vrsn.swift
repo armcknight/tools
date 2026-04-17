@@ -3,7 +3,7 @@ import Foundation
 import Shared
 
 @main
-struct Vrsn: ParsableCommand {
+struct Vrsn: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Bump version numbers in project files.",
         discussion: "Supports xcconfig, plist, podspec, gemspec, Swift, and plaintext files. Use --pattern with a capture group for arbitrary file formats.",
@@ -43,7 +43,13 @@ struct Vrsn: ParsableCommand {
     @Option(name: [.customShort("p"), .long], help: "Regex pattern with a capture group to locate the version in plaintext files.")
     var pattern: String?
 
-    func run() throws {
+    @Flag(name: .long, help: "Commit the version bump. Errors if other changes are staged unless --stash is also given.")
+    var commit = false
+
+    @Flag(name: .long, help: "Before committing, stash any other staged changes via 'git stash --staged', then restore them after. Requires --commit.")
+    var stash = false
+
+    func run() async throws {
         let fileType = try FileType.detect(from: file)
         let resolvedKey = key ?? fileType.defaultKey(numeric: numeric)
 
@@ -99,6 +105,27 @@ struct Vrsn: ParsableCommand {
 
         try fileType.writeVersion(newVersion, to: file, key: resolvedKey, pattern: pattern)
         print(newVersion)
+
+        if commit {
+            let staged = try await Shell.run("git", arguments: ["diff", "--cached", "--name-only"])
+            let hasOtherStaged = !staged.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+            if hasOtherStaged && !stash {
+                throw VrsnError.stagedChangesExist
+            }
+            if hasOtherStaged {
+                try await Shell.run("git", arguments: ["stash", "--staged"])
+            }
+
+            try await Shell.run("git", arguments: ["add", file])
+
+            let noun = numeric ? "build" : "version"
+            try await Shell.run("git", arguments: ["commit", "-m", "bumped \(noun) from \(currentVersionString) to \(newVersion)"])
+
+            if hasOtherStaged {
+                try await Shell.run("git", arguments: ["stash", "pop"])
+            }
+        }
     }
 
     private func formatVersion(_ base: String, identifier: String?, metadata: String?) -> String {
@@ -276,6 +303,7 @@ enum VrsnError: LocalizedError {
     case noVersionFound(String, String)
     case couldNotReadFile(String)
     case couldNotWriteFile(String)
+    case stagedChangesExist
 
     var errorDescription: String? {
         switch self {
@@ -293,6 +321,8 @@ enum VrsnError: LocalizedError {
             return "Could not read file: \(path)"
         case .couldNotWriteFile(let path):
             return "Could not write file: \(path)"
+        case .stagedChangesExist:
+            return "Index has staged changes; commit or unstage them first, or use --stash to stash them automatically."
         }
     }
 }

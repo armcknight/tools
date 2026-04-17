@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `vrsn --commit` — after writing the new version, stages the changed file and creates a commit with the message `"bumped version from X to Y"` (or `"bumped build from X to Y"` in `--numeric` mode); errors if other changes are staged unless `--stash` is also given
+- `vrsn --stash` — before committing, stashes any other staged changes via `git stash --staged`, then restores them after; requires `--commit`
 - `prepare-release --build-number-key KEY` — auto-increments the numeric value at `KEY` in `--file` via `vrsn -n` and appends the result as semver build metadata (`+N`) in the changelog entry and git tag; supersedes `--build-number` when both are given
 - `prepare-release` validates that the marketing version was bumped before running, using the changelog as the source of truth (compares the version file against the most recent non-RC section header); errors with an actionable message if the version was not bumped
 

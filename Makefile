@@ -41,15 +41,15 @@ test:
 
 .PHONY: patch
 patch:
-	vrsn patch -f $(VERSION_FILE) -k $(VERSION_KEY)
+	vrsn patch -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: minor
 minor:
-	vrsn minor -f $(VERSION_FILE) -k $(VERSION_KEY)
+	vrsn minor -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: major
 major:
-	vrsn major -f $(VERSION_FILE) -k $(VERSION_KEY)
+	vrsn major -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: deploy-beta
 deploy-beta:
