@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] 2026-04-16
+
 ### Added
 - `vrsn --commit` — after writing the new version, stages the changed file and creates a commit with the message `"bumped version from X to Y"` (or `"bumped build from X to Y"` in `--numeric` mode); errors if other changes are staged unless `--stash` is also given
 - `vrsn --stash` — before committing, stashes any other staged changes via `git stash --staged`, then restores them after; requires `--commit`
