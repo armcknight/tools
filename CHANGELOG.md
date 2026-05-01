@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] 2026-04-30
+
 ### Fixed
 - `prepare-release` now forwards `--changelog` to `prepare-github-release`, so non-default changelog paths are respected when creating GitHub releases.
 
