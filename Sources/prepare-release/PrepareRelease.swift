@@ -102,7 +102,7 @@ struct PrepareRelease: AsyncParsableCommand {
         }
 
         if githubRelease {
-            var args = [tagVersion]
+            var args = [tagVersion, "--changelog", changelog]
             if prerelease { args.append("--prerelease") }
             try await Shell.run("prepare-github-release", arguments: args)
         }
