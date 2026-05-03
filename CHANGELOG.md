@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `prepare-release` validates that the `[Unreleased]` section is non-empty before mutating anything (incrementing build number, creating tag), so a forgotten changelog entry fails fast without leaving partial state to undo
+
 ## [4.1.0] 2026-05-02
 
 ### Added

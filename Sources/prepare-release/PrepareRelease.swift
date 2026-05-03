@@ -49,6 +49,9 @@ struct PrepareRelease: AsyncParsableCommand {
         // re-bumping between deploys.
         try validateVersionBumped(currentVersion: currentVersion)
 
+        // Validate that [Unreleased] has content before mutating anything.
+        try validateUnreleasedNotEmpty()
+
         // Auto-increment the build number if --build-number-key was given.
         // vrsn prints the new value after writing, so one call does both.
         var resolvedBuildNumber = buildNumber
@@ -119,6 +122,20 @@ struct PrepareRelease: AsyncParsableCommand {
     }
 
     // MARK: - Changelog helpers
+
+    /// Validates that the [Unreleased] section contains at least one non-blank line,
+    /// so we don't tag an empty release.
+    private func validateUnreleasedNotEmpty() throws {
+        let lines = try FileHelpers.readLines(changelog)
+        guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }) else {
+            return // No structure to validate against
+        }
+        let bodyEnd = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
+        let hasContent = lines[(unreleasedIdx + 1)..<bodyEnd].contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if !hasContent {
+            throw PrepareReleaseError.emptyUnreleasedSection
+        }
+    }
 
     /// Validates that the current version in the version file differs from the most recent
     /// non-RC release section in the changelog. Errors if they match, meaning the version
@@ -239,6 +256,7 @@ struct PrepareRelease: AsyncParsableCommand {
 enum PrepareReleaseError: LocalizedError {
     case noUnreleasedSection
     case versionNotBumped(String)
+    case emptyUnreleasedSection
 
     var errorDescription: String? {
         switch self {
@@ -246,6 +264,8 @@ enum PrepareReleaseError: LocalizedError {
             return "Could not find '## [Unreleased]' section in changelog."
         case .versionNotBumped(let v):
             return "Version \(v) was already released. Run 'make patch', 'make minor', or 'make major' to bump before deploying."
+        case .emptyUnreleasedSection:
+            return "The [Unreleased] section is empty. Add changelog entries before releasing."
         }
     }
 }
