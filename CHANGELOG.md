@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] 2026-05-02
+
 ### Added
 - `spm-acknowledgements` — generates a CocoaPods-compatible `PreferenceSpecifiers` acknowledgements plist from `Package.resolved` and an SPM checkouts directory; drop-in replacement for the plist CocoaPods used to generate automatically; auto-detects `Package.resolved` and the checkouts directory for both Xcode and pure-SPM projects
 
