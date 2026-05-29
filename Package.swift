@@ -92,6 +92,12 @@ let package = Package(
                 "Shared",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]),
+        .executableTarget(
+            name: "ota-publish",
+            dependencies: [
+                "Shared",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]),
         .testTarget(
             name: "SharedTests",
             dependencies: ["Shared"]),

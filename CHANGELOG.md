@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `ota-publish` — uploads an ad-hoc iOS `.ipa` to a private S3 bucket and emits a short-lived, self-authenticating itms-services OTA install flow (presigned IPA URL embedded in a `manifest.plist`, wrapped by an `install.html` landing page so the link is tappable from GitHub). Supports `--mode initial` (upload then sign) and `--mode refresh` (re-sign an already-uploaded build without rebuilding); prints `{"landingUrl", "expiresAt"}` JSON. Credentials come from the ambient AWS chain; no GitHub coupling.
+
 ## [4.2.0] 2026-05-02
 
 ### Added
