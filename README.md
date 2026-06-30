@@ -31,6 +31,7 @@ Shipped as a binary-only Homebrew cask. Source lives in this (private) repo; bui
 
 ```
 brew tap armcknight/tools
+brew trust armcknight/tools   # third-party taps require explicit trust
 brew install --cask armcknight/tools/tools
 ```
 
