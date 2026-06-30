@@ -62,7 +62,12 @@ make deploy-beta             # Tag an RC from [Unreleased] and push
 make deploy                  # Consolidate RC entries, tag, push
 ```
 
-The `release` GitHub Actions workflow runs on every numeric tag push. It builds the binaries on `macos-14` (arm64), tarballs them, creates a release on `armcknight/homebrew-tools` with the tarball attached, and updates `Casks/tools.rb` (version + sha256) there. So `make deploy` only handles the source-side tag push — the homebrew side is fully automated.
+The `release` GitHub Actions workflow runs on every numeric tag push. It builds the binaries on `macos-14` (arm64), tarballs them, creates a release on `armcknight/homebrew-tools` with the tarball attached, and updates the appropriate cask there:
+
+- tag `X.Y.Z` → `Casks/tools.rb` (stable channel — what `brew install --cask tools` gets)
+- tag `X.Y.Z-rc.N` → `Casks/tools-rc.rb` (release-candidate channel — opt-in via `brew install --cask armcknight/tools/tools-rc`)
+
+So `make deploy` and `make deploy-beta` only handle the source-side tag push — the homebrew side is fully automated. (`tools` and `tools-rc` casks are marked `conflicts_with` each other, so brew won't let you have both installed at once.)
 
 #### One-time secret setup
 

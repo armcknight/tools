@@ -16,7 +16,6 @@ on:
 
 env:
   TAP_REPO: armcknight/homebrew-tools
-  CASK_PATH: Casks/tools.rb
 
 jobs:
   release:
@@ -27,15 +26,24 @@ jobs:
       - name: Build release binaries
         run: swift build -c release
 
-      - name: Verify version matches tag
+      - name: Resolve version + cask path
+        id: ver
         run: |
           set -e
-          TAG_VERSION="${GITHUB_REF_NAME}"
+          TAG="${GITHUB_REF_NAME}"
           SRC_VERSION=$(awk -F '"' '/toolsVersion/ {print $2; exit}' Sources/Shared/Version.swift)
-          if [ "$TAG_VERSION" != "$SRC_VERSION" ]; then
-            echo "Version.swift toolsVersion ($SRC_VERSION) does not match tag ($TAG_VERSION)"
+          # An RC tag like 4.3.1-rc.1 should match Version.swift's base 4.3.1.
+          BASE="${TAG%%-*}"
+          if [ "$BASE" != "$SRC_VERSION" ]; then
+            echo "Version.swift toolsVersion ($SRC_VERSION) does not match base of tag ($TAG)"
             exit 1
           fi
+          if [[ "$TAG" == *-* ]]; then
+            CASK_PATH="Casks/tools-rc.rb"
+          else
+            CASK_PATH="Casks/tools.rb"
+          fi
+          echo "cask_path=$CASK_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Package tarball
         id: pkg
@@ -78,6 +86,7 @@ jobs:
           GH_TOKEN: ${{ secrets.TAP_RELEASE_TOKEN }}
           VERSION: ${{ steps.pkg.outputs.version }}
           SHA256: ${{ steps.pkg.outputs.sha256 }}
+          CASK_PATH: ${{ steps.ver.outputs.cask_path }}
         run: |
           set -e
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${TAP_REPO}.git" tap
@@ -91,5 +100,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${CASK_PATH}"
-          git commit -m "tools: bump to ${VERSION}"
+          git commit -m "tools: bump $(basename ${CASK_PATH} .rb) to ${VERSION}"
           git push
