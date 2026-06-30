@@ -1,0 +1,95 @@
+name: release
+
+# Builds release binaries for aarch64-apple-darwin on every numeric tag push,
+# uploads them as a release asset on the tap repo (armcknight/homebrew-tools)
+# so the homebrew cask can fetch them without authentication, then bumps the
+# cask file's version + sha256 and commits back.
+#
+# Requires a fine-grained PAT stored as `TAP_RELEASE_TOKEN` with
+# `Contents: read+write` on armcknight/homebrew-tools. See README for setup.
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+env:
+  TAP_REPO: armcknight/homebrew-tools
+  CASK_PATH: Casks/tools.rb
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binaries
+        run: swift build -c release
+
+      - name: Verify version matches tag
+        run: |
+          set -e
+          TAG_VERSION="${GITHUB_REF_NAME}"
+          SRC_VERSION=$(awk -F '"' '/toolsVersion/ {print $2; exit}' Sources/Shared/Version.swift)
+          if [ "$TAG_VERSION" != "$SRC_VERSION" ]; then
+            echo "Version.swift toolsVersion ($SRC_VERSION) does not match tag ($TAG_VERSION)"
+            exit 1
+          fi
+
+      - name: Package tarball
+        id: pkg
+        run: |
+          set -e
+          VERSION="${GITHUB_REF_NAME}"
+          ARCHIVE="tools-${VERSION}-aarch64-apple-darwin.tar.gz"
+          mkdir -p dist
+          tar -czf "dist/$ARCHIVE" -C .build/release \
+            changetag \
+            inject-git-info \
+            migrate-changelog \
+            ota-publish \
+            prepare-github-release \
+            prepare-release \
+            psst \
+            read-changelog \
+            spm-acknowledgements \
+            tag-icons \
+            upload-symbols \
+            vrsn \
+            xcbs
+          SHA=$(shasum -a 256 "dist/$ARCHIVE" | awk '{print $1}')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "archive=dist/$ARCHIVE" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Create release on tap repo
+        env:
+          GH_TOKEN: ${{ secrets.TAP_RELEASE_TOKEN }}
+        run: |
+          gh release create "tools-${GITHUB_REF_NAME}" \
+            --repo "$TAP_REPO" \
+            --title "tools ${GITHUB_REF_NAME}" \
+            --notes "Binary release for tools ${GITHUB_REF_NAME} (aarch64-apple-darwin)." \
+            "${{ steps.pkg.outputs.archive }}"
+
+      - name: Bump cask in tap repo
+        env:
+          GH_TOKEN: ${{ secrets.TAP_RELEASE_TOKEN }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          SHA256: ${{ steps.pkg.outputs.sha256 }}
+        run: |
+          set -e
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${TAP_REPO}.git" tap
+          cd tap
+          sed -i '' -E "s/^  version \".*\"$/  version \"${VERSION}\"/" "${CASK_PATH}"
+          sed -i '' -E "s/^  sha256 \".*\"$/  sha256 \"${SHA256}\"/" "${CASK_PATH}"
+          if git diff --quiet; then
+            echo "no cask changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${CASK_PATH}"
+          git commit -m "tools: bump to ${VERSION}"
+          git push

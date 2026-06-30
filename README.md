@@ -17,6 +17,8 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `inject-git-info` | Write git SHA, branch, and clean status into Info.plist (Xcode build phase) |
 | `upload-symbols` | Upload dSYM files to Sentry (Xcode build phase) |
 | `tag-icons` | Overlay version/commit/custom text onto app icons (Xcode build phase) |
+| `ota-publish` | Upload an ad-hoc iOS `.ipa` to S3 and emit a short-lived itms-services OTA install landing page |
+| `spm-acknowledgements` | Generate an acknowledgements file from SPM dependency licenses |
 
 ## Requirements
 
@@ -25,9 +27,11 @@ A collection of developer tools for Apple platform projects, all written in Swif
 
 ## Installation
 
+Shipped as a binary-only Homebrew cask. Source lives in this (private) repo; built binaries are uploaded to releases on `armcknight/homebrew-tools` and installed via cask. Apple Silicon only (`aarch64-apple-darwin`).
+
 ```
 brew tap armcknight/tools
-brew install armcknight/tools/tools
+brew install --cask armcknight/tools/tools
 ```
 
 ## Development
@@ -42,11 +46,11 @@ make test    # Run unit and integration tests
 ### Local install
 
 ```bash
-make install    # Build and install dev binaries (unlinks Homebrew version)
-make uninstall  # Remove dev binaries and restore Homebrew version
+make install    # Build and install dev binaries (shadows the Homebrew cask)
+make uninstall  # Remove dev binaries; reinstalls the Homebrew cask if one was present
 ```
 
-`make install` replaces the Homebrew-managed binaries with locally built ones for testing. `make uninstall` reverses this by re-linking the Homebrew version.
+`make install` replaces the cask-installed binary symlinks at `$(brew --prefix)/bin/` with locally built ones for testing. `make uninstall` removes them and reinstalls the cask via `brew reinstall --cask tools`.
 
 ### Releasing
 
@@ -54,9 +58,22 @@ make uninstall  # Remove dev binaries and restore Homebrew version
 make patch                   # Bump patch version (must run before first deploy-beta in a cycle)
 make minor                   # Bump minor version
 make major                   # Bump major version
-make deploy-beta             # Tag an RC from [Unreleased], push, create GitHub prerelease
-make deploy                  # Consolidate RC entries, tag, push, update Homebrew formula
+make deploy-beta             # Tag an RC from [Unreleased] and push
+make deploy                  # Consolidate RC entries, tag, push
 ```
+
+The `release` GitHub Actions workflow runs on every numeric tag push. It builds the binaries on `macos-14` (arm64), tarballs them, creates a release on `armcknight/homebrew-tools` with the tarball attached, and updates `Casks/tools.rb` (version + sha256) there. So `make deploy` only handles the source-side tag push — the homebrew side is fully automated.
+
+#### One-time secret setup
+
+The workflow needs a `TAP_RELEASE_TOKEN` repo secret on `tools`. Create a **fine-grained personal access token** with:
+
+- **Repository access**: `armcknight/homebrew-tools` only
+- **Permissions**:
+  - `Contents`: Read and write (for `git push` of the cask bump + creating releases)
+  - `Metadata`: Read-only (auto-granted)
+
+Add it at `Settings → Secrets and variables → Actions → New repository secret` with name `TAP_RELEASE_TOKEN`. (The same PAT used for `workr` can be reused — fine-grained tokens may grant access to multiple repos.)
 
 Version bumping and deploying are separate steps. Bump first, then deploy as many RCs as needed:
 
@@ -233,4 +250,4 @@ swift test
 
 ## License
 
-MIT
+License terms pending — repo is being made private. A `LICENSE` file will be added before any external distribution.

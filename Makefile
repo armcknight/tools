@@ -1,7 +1,10 @@
 VERSION_FILE = Sources/Shared/Version.swift
 VERSION_KEY = toolsVersion
-FORMULA_PATH = homebrew-tools/tools.rb
-FORMULA_PATTERN = tag: "([^"]+)"
+
+# Keep this in sync with the cask in armcknight/homebrew-tools.
+BINARIES = changetag inject-git-info migrate-changelog ota-publish \
+           prepare-github-release prepare-release psst read-changelog \
+           spm-acknowledgements tag-icons upload-symbols vrsn xcbs
 
 
 # MARK: - Dev tooling
@@ -10,34 +13,42 @@ FORMULA_PATTERN = tag: "([^"]+)"
 build:
 	swift build -c release
 
-# MARK: - Install
-
-.PHONY: install
-install: build
-	brew unlink tools 2>/dev/null || true
-	@BREW_PREFIX=$$(brew --prefix) && \
-	for tool in changetag inject-git-info migrate-changelog ota-publish prepare-github-release prepare-release psst read-changelog spm-acknowledgements tag-icons upload-symbols vrsn xcbs; do \
-		install .build/release/$$tool $$BREW_PREFIX/bin/; \
-	done
-	@echo "Installed dev tools to $$(brew --prefix)/bin (run 'brew link tools' to restore Homebrew version)"
-
-.PHONY: uninstall
-uninstall:
-	@BREW_PREFIX=$$(brew --prefix) && \
-	for tool in changetag inject-git-info migrate-changelog ota-publish prepare-github-release prepare-release psst read-changelog spm-acknowledgements tag-icons upload-symbols vrsn xcbs; do \
-		rm -f $$BREW_PREFIX/bin/$$tool; \
-	done
-	brew link tools 2>/dev/null || true
-	@echo "Restored Homebrew-managed tools"
-
-# MARK: - Testing
-
 .PHONY: test
 test:
 	swift test
 
 
+# MARK: - Local install
+
+# Drops locally-built binaries into the homebrew prefix's bin/, replacing the
+# cask-installed symlinks. Run `make uninstall` to restore the Homebrew cask.
+.PHONY: install
+install: build
+	@BREW_PREFIX=$$(brew --prefix) && \
+	for tool in $(BINARIES); do \
+		rm -f $$BREW_PREFIX/bin/$$tool; \
+		install .build/release/$$tool $$BREW_PREFIX/bin/; \
+	done
+	@echo "Installed local tools to $$(brew --prefix)/bin (shadows the Homebrew cask)"
+
+.PHONY: uninstall
+uninstall:
+	@BREW_PREFIX=$$(brew --prefix) && \
+	for tool in $(BINARIES); do \
+		rm -f $$BREW_PREFIX/bin/$$tool; \
+	done
+	@if brew list --cask tools >/dev/null 2>&1; then \
+		brew reinstall --cask tools; \
+	else \
+		echo "No Homebrew cask version to restore — run \`brew install --cask armcknight/tools/tools\` if you want one."; \
+	fi
+
+
 # MARK: - Releasing
+
+# Bumps the version + git tag + push. The release workflow on this repo picks
+# up the tag, builds the binaries, uploads them to armcknight/homebrew-tools
+# as release assets, and updates the cask there.
 
 .PHONY: patch
 patch:
@@ -54,15 +65,11 @@ major:
 .PHONY: deploy-beta
 deploy-beta:
 	@{ \
-	prepare-release rc --file $(VERSION_FILE) --key $(VERSION_KEY) --push --github-release --prerelease ; \
+	prepare-release rc --file $(VERSION_FILE) --key $(VERSION_KEY) --push --prerelease ; \
 	} 2>&1 | tee deploy.log
 
 .PHONY: deploy
 deploy:
 	@{ \
-	NEW_VERSION=$$(prepare-release --file $(VERSION_FILE) --key $(VERSION_KEY) --push --github-release) && \
-	git clone git@github.com:armcknight/homebrew-tools.git homebrew-tools && \
-	vrsn -u "$$NEW_VERSION" -f $(FORMULA_PATH) -p '$(FORMULA_PATTERN)' && \
-	cd homebrew-tools && git add tools.rb && git commit -m "update to $$NEW_VERSION" && git push && cd .. && \
-	rm -rf homebrew-tools ; \
+	prepare-release --file $(VERSION_FILE) --key $(VERSION_KEY) --push ; \
 	} 2>&1 | tee deploy.log
