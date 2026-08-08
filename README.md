@@ -256,4 +256,4 @@ swift test
 
 ## License
 
-License terms pending — repo is being made private. A `LICENSE` file will be added before any external distribution.
+Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) for the full text.
