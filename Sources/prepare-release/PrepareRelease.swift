@@ -18,6 +18,9 @@ struct PrepareRelease: AsyncParsableCommand {
     @Option(name: [.customShort("k"), .long], help: "Key mapping to the version in the file. Optional for plain version files (e.g. a bare VERSION file).")
     var key: String?
 
+    @Option(name: [.customShort("p"), .long], help: "Regex pattern with a capture group to locate the version, for file formats --key cannot read (e.g. JSON). Passed through to vrsn.")
+    var pattern: String?
+
     @Option(name: [.customShort("l"), .long], help: "Path to the changelog file.")
     var changelog: String = "CHANGELOG.md"
 
@@ -118,6 +121,10 @@ struct PrepareRelease: AsyncParsableCommand {
     private func vrsnReadArgs() -> [String] {
         var args = ["-r", "-f", file]
         if let k = key { args += ["-k", k] }
+        // vrsn dispatches on file type and only consults the pattern for types it
+        // treats as plaintext — anything that is not xcconfig, plist, podspec,
+        // gemspec or Swift. JSON lands there, which is the case this exists for.
+        if let p = pattern { args += ["-p", p] }
         return args
     }
 

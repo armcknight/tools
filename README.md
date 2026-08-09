@@ -147,6 +147,10 @@ prepare-release --file Sources/Shared/Version.swift --key toolsVersion --push --
 # Plain VERSION file — --key is optional
 prepare-release --file VERSION --push --github-release
 
+# JSON and other formats --key cannot read — locate the version by regex instead.
+# Same capture-group semantics as `vrsn --pattern`.
+prepare-release --file plugin.json --pattern '"version": "([^"]+)"' --push --github-release
+
 # Release candidate — tags [Unreleased] as RC; pass rc as the first argument
 prepare-release rc --file Sources/Shared/Version.swift --key toolsVersion --push --github-release --prerelease
 

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `prepare-release --pattern` — locate the version by regex, for formats `--key` cannot read. `vrsn` already had this; `prepare-release` did not, so a JSON version file could not drive a release at all. Needed by Claude Code plugin manifests, where the version lives in `plugin.json`.
+
 ## [4.3.0] 2026-05-29
 
 ### Added
