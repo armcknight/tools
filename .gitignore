@@ -5,3 +5,4 @@
 /Tests/.DS_Store
 deploy.log
 homebrew-tools/
+.claude/settings.local.json
