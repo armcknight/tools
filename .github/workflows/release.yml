@@ -1,12 +1,9 @@
 name: release
 
-# Builds release binaries for aarch64-apple-darwin on every numeric tag push,
-# uploads them as a release asset on the tap repo (armcknight/homebrew-tools)
-# so the homebrew cask can fetch them without authentication, then bumps the
-# cask file's version + sha256 and commits back.
-#
-# Requires a fine-grained PAT stored as `TAP_RELEASE_TOKEN` with
-# `Contents: read+write` on armcknight/homebrew-tools. See README for setup.
+# Delegates to armcknight/workflows' reusable SwiftPM cask-release pipeline:
+# builds, (optionally signs+notarizes), tarballs the binaries, publishes to the
+# armcknight/homebrew-tools tap, and bumps Casks/tools.rb (or tools-rc.rb for an
+# RC tag). Requires TAP_RELEASE_TOKEN (Contents: read+write on the tap).
 
 on:
   push:
@@ -14,97 +11,25 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
       - '[0-9]+.[0-9]+.[0-9]+-*'
 
-env:
-  TAP_REPO: armcknight/homebrew-tools
-
 jobs:
   release:
-    # macos-15, matching the reusable CI workflow. macos-14 ships Swift 5.10,
-    # which cannot read this package's swift-tools-version 6.1 manifest.
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build release binaries
-        run: swift build -c release
-
-      - name: Resolve version + cask path
-        id: ver
-        run: |
-          set -e
-          TAG="${GITHUB_REF_NAME}"
-          SRC_VERSION=$(awk -F '"' '/toolsVersion/ {print $2; exit}' Sources/Shared/Version.swift)
-          # An RC tag like 4.3.1-rc.1 should match Version.swift's base 4.3.1.
-          BASE="${TAG%%-*}"
-          if [ "$BASE" != "$SRC_VERSION" ]; then
-            echo "Version.swift toolsVersion ($SRC_VERSION) does not match base of tag ($TAG)"
-            exit 1
-          fi
-          if [[ "$TAG" == *-* ]]; then
-            CASK_PATH="Casks/tools-rc.rb"
-          else
-            CASK_PATH="Casks/tools.rb"
-          fi
-          echo "cask_path=$CASK_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Package tarball
-        id: pkg
-        run: |
-          set -e
-          VERSION="${GITHUB_REF_NAME}"
-          ARCHIVE="tools-${VERSION}-aarch64-apple-darwin.tar.gz"
-          mkdir -p dist
-          tar -czf "dist/$ARCHIVE" -C .build/release \
-            changetag \
-            inject-git-info \
-            migrate-changelog \
-            ota-publish \
-            prepare-github-release \
-            prepare-release \
-            psst \
-            read-changelog \
-            spm-acknowledgements \
-            tag-icons \
-            upload-symbols \
-            vrsn \
-            xcbs
-          SHA=$(shasum -a 256 "dist/$ARCHIVE" | awk '{print $1}')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "archive=dist/$ARCHIVE" >> "$GITHUB_OUTPUT"
-          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Create release on tap repo
-        env:
-          GH_TOKEN: ${{ secrets.TAP_RELEASE_TOKEN }}
-        run: |
-          gh release create "tools-${GITHUB_REF_NAME}" \
-            --repo "$TAP_REPO" \
-            --title "tools ${GITHUB_REF_NAME}" \
-            --notes "Binary release for tools ${GITHUB_REF_NAME} (aarch64-apple-darwin)." \
-            "${{ steps.pkg.outputs.archive }}"
-
-      - name: Bump cask in tap repo
-        env:
-          GH_TOKEN: ${{ secrets.TAP_RELEASE_TOKEN }}
-          VERSION: ${{ steps.pkg.outputs.version }}
-          SHA256: ${{ steps.pkg.outputs.sha256 }}
-          CASK_PATH: ${{ steps.ver.outputs.cask_path }}
-        run: |
-          set -e
-          git clone "https://github.com/${TAP_REPO}.git" tap
-          cd tap
-          # Authenticate via a credential helper that reads GH_TOKEN at push time,
-          # so the token is never written into .git/config (where `git remote -v`
-          # would print it in the clear, and any workspace dump would leak it).
-          git config credential.helper '!f() { echo "username=x-access-token"; echo "password=$GH_TOKEN"; }; f'
-          sed -i '' -E "s/^  version \".*\"$/  version \"${VERSION}\"/" "${CASK_PATH}"
-          sed -i '' -E "s/^  sha256 \".*\"$/  sha256 \"${SHA256}\"/" "${CASK_PATH}"
-          if git diff --quiet; then
-            echo "no cask changes to commit"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${CASK_PATH}"
-          git commit -m "tools: bump $(basename ${CASK_PATH} .rb) to ${VERSION}"
-          git push
+    uses: armcknight/workflows/.github/workflows/swiftpm-cask-release.yml@1
+    with:
+      cask-name: tools
+      binaries: |
+        changetag
+        inject-git-info
+        migrate-changelog
+        ota-publish
+        prepare-github-release
+        prepare-release
+        psst
+        read-changelog
+        spm-acknowledgements
+        tag-icons
+        upload-symbols
+        vrsn
+        xcbs
+      version-file: Sources/Shared/Version.swift
+      version-regex: '.*toolsVersion.*"([^"]+)".*'
+    secrets: inherit
