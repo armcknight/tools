@@ -1,5 +1,5 @@
 {
-  "originHash" : "48dc8c34a025adb00a3c07f5c8efb80addc212e5a8b00a635817adc8f4c94a3f",
+  "originHash" : "84a7b03d9051f6e508340b21e5e1dcb53a828f3d990b3efd898be20036ad2a60",
   "pins" : [
     {
       "identity" : "git-kit",
@@ -7,16 +7,7 @@
       "location" : "https://github.com/armcknight/git-kit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "947c584f56b683388b0fb4df08a5597e90a86c23"
-      }
-    },
-    {
-      "identity" : "shell-kit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/binarybirds/shell-kit",
-      "state" : {
-        "revision" : "8507fc5a1d4c9b4aca71fa69bf6030fb94229d37",
-        "version" : "1.0.1"
+        "revision" : "2e7350fe151a99e6dd62c103f0690eb00d525709"
       }
     },
     {
