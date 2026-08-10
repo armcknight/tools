@@ -4,7 +4,7 @@ import GitKit
 import Shared
 
 @main
-struct MigrateChangelog: ParsableCommand {
+struct MigrateChangelog: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Move Unreleased changelog entries to a new versioned section.",
         version: toolsVersion
@@ -19,11 +19,11 @@ struct MigrateChangelog: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Leave changes staged without committing.")
     var noCommit = false
 
-    func run() throws {
+    func run() async throws {
         let git = Git()
 
         if !noCommit {
-            let status = try git.run(.status(short: true))
+            let status = try await git.run(.status(short: true))
             if !status.isEmpty {
                 throw MigrateChangelogError.dirtyWorkingTree
             }
@@ -46,8 +46,8 @@ struct MigrateChangelog: ParsableCommand {
         try FileHelpers.write(updatedContent, to: changelogPath)
 
         if !noCommit {
-            try git.run(.addAll)
-            try git.run(.commit(message: "chore(changelog): moved Unreleased entries to \(version)"))
+            try await git.run(.addAll)
+            try await git.run(.commit(message: "chore(changelog): moved Unreleased entries to \(version)"))
         }
 
         print("Migrated changelog to version \(version)")

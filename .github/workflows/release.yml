@@ -89,8 +89,12 @@ jobs:
           CASK_PATH: ${{ steps.ver.outputs.cask_path }}
         run: |
           set -e
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${TAP_REPO}.git" tap
+          git clone "https://github.com/${TAP_REPO}.git" tap
           cd tap
+          # Authenticate via a credential helper that reads GH_TOKEN at push time,
+          # so the token is never written into .git/config (where `git remote -v`
+          # would print it in the clear, and any workspace dump would leak it).
+          git config credential.helper '!f() { echo "username=x-access-token"; echo "password=$GH_TOKEN"; }; f'
           sed -i '' -E "s/^  version \".*\"$/  version \"${VERSION}\"/" "${CASK_PATH}"
           sed -i '' -E "s/^  sha256 \".*\"$/  sha256 \"${SHA256}\"/" "${CASK_PATH}"
           if git diff --quiet; then

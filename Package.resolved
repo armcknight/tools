@@ -1,13 +1,13 @@
 {
-  "originHash" : "84a7b03d9051f6e508340b21e5e1dcb53a828f3d990b3efd898be20036ad2a60",
+  "originHash" : "85e060c562fe8678ffa208d9ef9a81854059b96b75b210b21cb9dbc6d3ca84a3",
   "pins" : [
     {
       "identity" : "git-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/armcknight/git-kit.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "2e7350fe151a99e6dd62c103f0690eb00d525709"
+        "revision" : "7b4bc545fd9d936c5ad9e4b85589136f3866d506",
+        "version" : "2.0.0"
       }
     },
     {

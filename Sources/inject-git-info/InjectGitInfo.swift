@@ -40,9 +40,9 @@ struct InjectGitInfo: AsyncParsableCommand {
         }
 
         let git = Git(path: projectDirectory)
-        let commitHash = try git.run(.raw("rev-parse --short HEAD"))
-        let branch = try git.run(.revParse(abbrevRef: true, revision: "HEAD"))
-        let statusOutput = try git.run(.status(short: true))
+        let commitHash = try await git.run(.raw("rev-parse --short HEAD"))
+        let branch = try await git.run(.revParse(abbrevRef: true, revision: "HEAD"))
+        let statusOutput = try await git.run(.status(short: true))
         let isClean = statusOutput.isEmpty
 
         try await Plist.set(key: "GIT_COMMIT_HASH", value: commitHash, in: plist)

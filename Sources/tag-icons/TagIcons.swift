@@ -33,7 +33,7 @@ struct TagIcons: AsyncParsableCommand {
 
         if mode == "cleanup" {
             for icon in icons {
-                try git.run(.raw("checkout \"\(icon)\""))
+                try await git.run(.raw("checkout \"\(icon)\""))
             }
             print("Restored \(icons.count) icons.")
             return
@@ -53,7 +53,7 @@ struct TagIcons: AsyncParsableCommand {
         switch mode {
         case "commit":
             let git = Git()
-            return try git.run(.raw("rev-parse --short HEAD"))
+            return try await git.run(.raw("rev-parse --short HEAD"))
         case "version":
             let plist = plistFile ?? ProcessInfo.processInfo.environment["INFOPLIST_FILE"] ?? ""
             guard !plist.isEmpty else {

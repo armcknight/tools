@@ -8,7 +8,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0"),
         .package(url: "https://github.com/swiftlang/swift-subprocess.git", from: "0.4.0"),
-        .package(url: "https://github.com/armcknight/git-kit.git", branch: "main"),
+        .package(url: "https://github.com/armcknight/git-kit.git", from: "2.0.0"),
     ],
     targets: [
         .target(

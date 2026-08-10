@@ -4,7 +4,7 @@ import GitKit
 import Shared
 
 @main
-struct Changetag: ParsableCommand {
+struct Changetag: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Extract release notes from a changelog and write them into a git tag annotation.",
         version: toolsVersion
@@ -25,18 +25,18 @@ struct Changetag: ParsableCommand {
     @Option(name: [.customShort("m"), .long], help: "Commit message. Required when --commit is used.")
     var message: String?
 
-    func run() throws {
+    func run() async throws {
         let git = Git()
 
         // Ensure comment character won't conflict with markdown headings
-        try git.run(.writeConfig(name: "core.commentchar", value: "@"))
+        try await git.run(.writeConfig(name: "core.commentchar", value: "@"))
 
         guard FileManager.default.fileExists(atPath: changelogPath) else {
             throw ChangetagError.invalidChangelogPath(changelogPath)
         }
 
         // Check existing tag
-        if let result = try? git.run(.raw("tag -n \(tagName)")),
+        if let result = try? await git.run(.raw("tag -n \(tagName)")),
            !result.isEmpty, result != tagName {
             throw ChangetagError.tagExists(tagName)
         }
@@ -71,12 +71,12 @@ struct Changetag: ParsableCommand {
             guard let commitMessage = message else {
                 throw ChangetagError.missingCommitMessage
             }
-            try git.run(.addAll)
-            try git.run(.commit(message: commitMessage))
+            try await git.run(.addAll)
+            try await git.run(.commit(message: commitMessage))
         }
 
         let tagMessage = entryLines.joined(separator: "\n").escapedForShell
-        try git.run(.raw("tag \(tagName) -m \"\(tagMessage)\""))
+        try await git.run(.raw("tag \(tagName) -m \"\(tagMessage)\""))
 
         print("Tagged \(tagName) with changelog entry for \(entryName)")
     }
