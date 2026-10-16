@@ -1,7 +1,8 @@
 VERSION_FILE = Sources/Shared/Version.swift
 VERSION_KEY = toolsVersion
 
-# Keep this in sync with the cask in armcknight/homebrew-tools.
+# Keep this in sync with `binaries` in .github/workflows/release.yml. The release
+# workflow writes that list into the cask's binary lines, so the tap needs no edit.
 BINARIES = changetag check-release-ready inject-git-info migrate-changelog ota-publish \
            prepare-github-release prepare-release psst read-changelog \
            spm-acknowledgements tag-icons upload-symbols vrsn xcbs
