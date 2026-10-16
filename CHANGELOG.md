@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] 2026-10-16
+
 ### Changed
 
 - `prepare-release`: a final release after an RC cycle now requires an empty `[Unreleased]` section, so it cannot ship changes that no release candidate tested. Before, it required entries in `[Unreleased]` and failed when the section was empty
