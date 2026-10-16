@@ -18,6 +18,7 @@ enum ToolRunner {
     }
 
     /// Run a tool binary and return (exitCode, stdout, stderr).
+    /// The build directory leads PATH, so a tool that calls another one gets the fresh build.
     static func run(
         _ tool: String,
         arguments: [String] = [],
@@ -28,6 +29,7 @@ enum ToolRunner {
         let result = try await Subprocess.run(
             .path(FilePath(toolPath)),
             arguments: Arguments(arguments),
+            environment: .inherit.updating(["PATH": "\(buildDir):\(ProcessInfo.processInfo.environment["PATH"] ?? "")"]),
             workingDirectory: workingDirectory.map { FilePath($0) },
             output: .string(limit: 16 * 1024 * 1024),
             error: .string(limit: 16 * 1024 * 1024)

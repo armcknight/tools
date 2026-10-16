@@ -10,6 +10,7 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `changetag` | Extract changelog sections and write them as annotated git tags |
 | `vrsn` | Bump semantic or numeric version numbers in xcconfig, plist, podspec, gemspec, Swift, and arbitrary files (via regex) |
 | `prepare-release` | Bump version, migrate changelog, tag, push, and create a GitHub release in one step; supports RC cycles and semver build metadata |
+| `check-release-ready` | Exit non-zero unless the checkout is clean, has an upstream, and is not behind it; put it in front of a deploy command |
 | `prepare-github-release` | Create a GitHub release from a git tag with changelog-derived release notes |
 | `read-changelog` | Print a changelog section to stdout by tag name or latest git tag |
 | `xcbs` | Dump fully-resolved Xcode build settings to lock files for diffing |
@@ -138,6 +139,8 @@ vrsn minor -f Config.xcconfig -k MARKETING_VERSION --commit --stash  # stash oth
 ### prepare-release
 
 Version bumping is the caller's responsibility. Run `vrsn` (or `make patch/minor/major`) before calling `prepare-release`. It will error if the version in `--file` matches the most recent non-RC changelog section, catching the "forgot to bump" case.
+
+With `--push`, it fetches first and errors before it changes anything if the current branch is behind its upstream, or has no upstream. Pull, then run it again.
 
 ```
 # Final release — migrates changelog, commits, tags, pushes, creates GitHub release

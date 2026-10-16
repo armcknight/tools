@@ -33,7 +33,7 @@ struct PrepareRelease: AsyncParsableCommand {
     @Option(name: [.customShort("n"), .customLong("rc-number")], help: "Override the release candidate number (default: auto-detected from consecutive RC sections in the changelog).")
     var rcNumber: Int?
 
-    @Flag(name: .long, help: "Push the commit and tag to the remote after tagging.")
+    @Flag(name: .long, help: "Push the commit and tag to the remote after tagging. Fetches first, and fails before changing anything if the current branch is behind its upstream.")
     var push = false
 
     @Flag(name: .long, help: "Create a GitHub release via prepare-github-release after pushing. Requires --push.")
@@ -43,6 +43,12 @@ struct PrepareRelease: AsyncParsableCommand {
     var prerelease = false
 
     func run() async throws {
+        // A release cut from a stale branch commits, tags and bumps the build number
+        // locally, then fails at `git push`. Check before any of that happens.
+        if push {
+            try await GitChecks.validateUpToDateWithUpstream()
+        }
+
         let isRC = component?.lowercased() == "rc"
         let currentVersion = try await Shell.run("vrsn", arguments: vrsnReadArgs())
 

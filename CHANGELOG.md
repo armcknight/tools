@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `check-release-ready` — exits non-zero unless the working tree is clean, the branch has an upstream, and a fresh fetch shows it is not behind (optionally, that HEAD is on `--branch`). For deploys that ship the local checkout with no `prepare-release` step, e.g. `check-release-ready --branch main && fly deploy`.
+- `prepare-release --push` fetches first and stops before it changes anything when the current branch is behind its upstream (or has no upstream). Before, it bumped the build number, committed and tagged locally, then failed at `git push`.
+
 ## [4.4.1] 2026-08-10
 
 ### Changed
