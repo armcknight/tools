@@ -15,7 +15,7 @@ on:
 
 jobs:
   release:
-    uses: armcknight/workflows/.github/workflows/swiftpm-cask-release.yml@2
+    uses: armcknight/workflows/.github/workflows/swiftpm-cask-release.yml@4
     with:
       cask-name: tools
       binaries: |
