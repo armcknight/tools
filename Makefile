@@ -6,15 +6,21 @@ BINARIES = changetag check-release-ready inject-git-info migrate-changelog ota-p
            prepare-github-release prepare-release psst read-changelog \
            spm-acknowledgements tag-icons upload-symbols vrsn xcbs
 
+.DEFAULT_GOAL := help
+
+.PHONY: help
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
 
 # MARK: - Dev tooling
 
 .PHONY: build
-build:
+build: ## Build all tools in release configuration
 	swift build -c release
 
 .PHONY: test
-test:
+test: ## Run the test suite
 	swift test
 
 
@@ -23,7 +29,7 @@ test:
 # Drops locally-built binaries into the homebrew prefix's bin/, replacing the
 # cask-installed symlinks. Run `make uninstall` to restore the Homebrew cask.
 .PHONY: install
-install: build
+install: build ## Build and install local binaries into the Homebrew prefix (shadows the cask)
 	@BREW_PREFIX=$$(brew --prefix) && \
 	for tool in $(BINARIES); do \
 		rm -f $$BREW_PREFIX/bin/$$tool; \
@@ -32,7 +38,7 @@ install: build
 	@echo "Installed local tools to $$(brew --prefix)/bin (shadows the Homebrew cask)"
 
 .PHONY: uninstall
-uninstall:
+uninstall: ## Remove locally installed binaries and restore the Homebrew cask
 	@BREW_PREFIX=$$(brew --prefix) && \
 	for tool in $(BINARIES); do \
 		rm -f $$BREW_PREFIX/bin/$$tool; \
@@ -51,25 +57,25 @@ uninstall:
 # as release assets, and updates the cask there.
 
 .PHONY: patch
-patch:
+patch: ## Bump the patch version and commit
 	vrsn patch -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: minor
-minor:
+minor: ## Bump the minor version and commit
 	vrsn minor -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: major
-major:
+major: ## Bump the major version and commit
 	vrsn major -f $(VERSION_FILE) -k $(VERSION_KEY) --commit
 
 .PHONY: deploy-beta
-deploy-beta:
+deploy-beta: ## Tag and push a release candidate (prerelease)
 	@{ \
 	prepare-release rc --file $(VERSION_FILE) --key $(VERSION_KEY) --push --prerelease ; \
 	} 2>&1 | tee deploy.log
 
 .PHONY: deploy
-deploy:
+deploy: ## Tag and push a release
 	@{ \
 	prepare-release --file $(VERSION_FILE) --key $(VERSION_KEY) --push ; \
 	} 2>&1 | tee deploy.log
