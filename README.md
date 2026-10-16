@@ -174,7 +174,7 @@ NEW_VERSION=$(prepare-release --file ...)
 
 RC tags are auto-numbered by scanning consecutive RC sections in the changelog — numbering is sequential even when the base version changes mid-cycle (e.g. `1.2.4-RC1` → `1.3.0-RC2` → `2.0.0-RC3`). Use `--rc-number` to override.
 
-When a final release follows an RC cycle, `prepare-release` detects the existing RC sections and consolidates all of them into the final release entry regardless of their version prefix.
+When a final release follows an RC cycle, `prepare-release` detects the existing RC sections and consolidates all of them into the final release entry regardless of their version prefix. A final release after an RC cycle requires an empty `[Unreleased]` section, so it ships only changes that a release candidate tested. A release candidate, or a final release with no RC cycle, requires entries in `[Unreleased]`.
 
 ### prepare-github-release
 

@@ -58,8 +58,14 @@ struct PrepareRelease: AsyncParsableCommand {
         // re-bumping between deploys.
         try validateVersionBumped(currentVersion: currentVersion)
 
-        // Validate that [Unreleased] has content before mutating anything.
-        try validateUnreleasedNotEmpty()
+        // A final release after an RC cycle ships only what the RCs tested, so [Unreleased]
+        // must be empty. Otherwise [Unreleased] must have content, so we don't tag an empty release.
+        let consolidatesRCs = try !isRC && hasRCEntries()
+        if consolidatesRCs {
+            try validateUnreleasedEmpty()
+        } else {
+            try validateUnreleasedNotEmpty()
+        }
 
         // Auto-increment the build number if --build-number-key was given.
         // vrsn prints the new value after writing, so one call does both.
@@ -92,7 +98,7 @@ struct PrepareRelease: AsyncParsableCommand {
         //          falling back to normal Unreleased migration if no RC cycle exists.
         if isRC {
             try await Shell.run("migrate-changelog", arguments: [changelog, tagVersion, "--no-commit"])
-        } else if try hasRCEntries() {
+        } else if consolidatesRCs {
             try consolidateRCEntries(tagVersion: tagVersion)
         } else {
             try await Shell.run("migrate-changelog", arguments: [changelog, tagVersion, "--no-commit"])
@@ -147,6 +153,20 @@ struct PrepareRelease: AsyncParsableCommand {
         let hasContent = lines[(unreleasedIdx + 1)..<bodyEnd].contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         if !hasContent {
             throw PrepareReleaseError.emptyUnreleasedSection
+        }
+    }
+
+    /// Validates that the [Unreleased] section has no non-blank lines, so a final release
+    /// after an RC cycle contains no changes that were not in a release candidate.
+    private func validateUnreleasedEmpty() throws {
+        let lines = try FileHelpers.readLines(changelog)
+        guard let unreleasedIdx = lines.firstIndex(where: { $0.hasPrefix("## [Unreleased]") }) else {
+            return
+        }
+        let bodyEnd = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
+        let hasContent = lines[(unreleasedIdx + 1)..<bodyEnd].contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if hasContent {
+            throw PrepareReleaseError.untestedUnreleasedChanges
         }
     }
 
@@ -215,8 +235,7 @@ struct PrepareRelease: AsyncParsableCommand {
         return lines[firstSection].contains("-RC")
     }
 
-    /// Combines all consecutive `-RC*` sections (plus any remaining [Unreleased] content)
-    /// into a single new `[tagVersion]` section, then removes the RC sections.
+    /// Combines all consecutive `-RC*` sections into a single new `[tagVersion]` section, then removes the RC sections.
     /// RC sections are collected by the `-RC` pattern regardless of version prefix,
     /// so a cycle that moved from 1.2.4-RC1 → 1.3.0-RC2 → 2.0.0-RC3 consolidates correctly.
     private func consolidateRCEntries(tagVersion: String) throws {
@@ -227,8 +246,6 @@ struct PrepareRelease: AsyncParsableCommand {
         }
 
         let unreleasedBodyEnd = lines[(unreleasedIdx + 1)...].firstIndex(where: { $0.hasPrefix("## ") }) ?? lines.endIndex
-        let unreleasedContent = lines[(unreleasedIdx + 1)..<unreleasedBodyEnd]
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
 
         // Collect consecutive RC sections in document order (newest RC appears first in the file).
         var rcRanges: [Range<Int>] = []
@@ -242,8 +259,8 @@ struct PrepareRelease: AsyncParsableCommand {
             i = end
         }
 
-        // Build combined body: oldest RC first (reverse of document order), then any remaining Unreleased.
-        let combined: [String] = rcContents.reversed().flatMap { $0 } + unreleasedContent
+        // Build combined body: oldest RC first (reverse of document order).
+        let combined: [String] = rcContents.reversed().flatMap { $0 }
 
         // Remove RC sections (reverse order to keep earlier indices valid).
         var result = lines
@@ -270,6 +287,7 @@ enum PrepareReleaseError: LocalizedError {
     case noUnreleasedSection
     case versionNotBumped(String)
     case emptyUnreleasedSection
+    case untestedUnreleasedChanges
 
     var errorDescription: String? {
         switch self {
@@ -279,6 +297,8 @@ enum PrepareReleaseError: LocalizedError {
             return "Version \(v) was already released. Run 'make patch', 'make minor', or 'make major' to bump before deploying."
         case .emptyUnreleasedSection:
             return "The [Unreleased] section is empty. Add changelog entries before releasing."
+        case .untestedUnreleasedChanges:
+            return "The [Unreleased] section has entries that no release candidate tested. Cut another release candidate, or move them out of [Unreleased], before the final release."
         }
     }
 }
