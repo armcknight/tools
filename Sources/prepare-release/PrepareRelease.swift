@@ -24,6 +24,9 @@ struct PrepareRelease: AsyncParsableCommand {
     @Option(name: [.customShort("l"), .long], help: "Path to the changelog file.")
     var changelog: String = "CHANGELOG.md"
 
+    @Option(name: .long, help: "Prefix for the tag name and the changelog section, e.g. 'v' for v1.0.0. The version file holds the version without it. Lets one repository release a second family of tags.")
+    var tagPrefix: String = ""
+
     @Option(name: [.customShort("b"), .customLong("build-number")], help: "Build number to append as semver metadata (+N) in the changelog entry and git tag. The version file is not affected.")
     var buildNumber: Int?
 
@@ -78,6 +81,7 @@ struct PrepareRelease: AsyncParsableCommand {
         // Determine tag version.
         // RC: append -RCn (and optional +build). Version was already bumped externally.
         // Release: use the current version as-is (also already bumped externally).
+        // Both: prepend --tag-prefix, so the tag and changelog section are e.g. v1.1.0-RC1.
         let tagVersion: String
         if isRC {
             let n: Int
@@ -86,10 +90,11 @@ struct PrepareRelease: AsyncParsableCommand {
             } else {
                 n = try nextRCNumber()
             }
-            let base = "\(currentVersion)-RC\(n)"
+            let base = "\(tagPrefix)\(currentVersion)-RC\(n)"
             tagVersion = resolvedBuildNumber.map { "\(base)+\($0)" } ?? base
         } else {
-            tagVersion = resolvedBuildNumber.map { "\(currentVersion)+\($0)" } ?? currentVersion
+            let base = "\(tagPrefix)\(currentVersion)"
+            tagVersion = resolvedBuildNumber.map { "\(base)+\($0)" } ?? base
         }
 
         // Migrate the changelog.
@@ -171,7 +176,7 @@ struct PrepareRelease: AsyncParsableCommand {
     }
 
     /// Validates that the current version in the version file differs from the most recent
-    /// non-RC release section in the changelog. Errors if they match, meaning the version
+    /// non-RC release section in the changelog, with --tag-prefix removed from the section. Errors if they match, meaning the version
     /// was not bumped before deploying (e.g. run `make patch`, `make minor`, or `make major`).
     private func validateVersionBumped(currentVersion: String) throws {
         let lines = try FileHelpers.readLines(changelog)
@@ -186,7 +191,10 @@ struct PrepareRelease: AsyncParsableCommand {
         guard i < lines.count, lines[i].hasPrefix("## [") else {
             return // No previous release to compare against
         }
-        let lastReleaseVersion = coreVersion(from: lines[i])
+        var lastReleaseVersion = coreVersion(from: lines[i])
+        if !tagPrefix.isEmpty, lastReleaseVersion.hasPrefix(tagPrefix) {
+            lastReleaseVersion = String(lastReleaseVersion.dropFirst(tagPrefix.count))
+        }
         if currentVersion == lastReleaseVersion {
             throw PrepareReleaseError.versionNotBumped(currentVersion)
         }

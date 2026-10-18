@@ -18,6 +18,8 @@ struct GitFixture {
         try git(["clone", "--quiet", remote, releaser])
         try configureUser(releaser)
         for (name, contents) in files {
+            let directory = URL(fileURLWithPath: "\(releaser)/\(name)").deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try contents.write(toFile: "\(releaser)/\(name)", atomically: true, encoding: .utf8)
         }
         try git(["-C", releaser, "add", "."])
