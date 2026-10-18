@@ -6,3 +6,5 @@
 deploy.log
 homebrew-tools/
 .claude/settings.local.json
+/.envrc
+/worktrees/
