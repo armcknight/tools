@@ -164,6 +164,10 @@ prepare-release --file Config.xcconfig --key MARKETING_VERSION --build-number-ke
 
 # Or supply the build number explicitly instead of auto-incrementing:
 prepare-release rc --file Config.xcconfig --key MARKETING_VERSION --build-number 42 --push --github-release --prerelease
+
+# A second tag family in the same repository: the version file holds 1.0.0, the tag,
+# changelog section and commit message use v1.0.0 (v1.1.0-RC1 for a release candidate).
+prepare-release --file templates/VERSION --changelog templates/CHANGELOG.md --tag-prefix v --push --github-release
 ```
 
 `prepare-release` prints the resolved tag name to stdout, so callers can capture it:
@@ -171,6 +175,8 @@ prepare-release rc --file Config.xcconfig --key MARKETING_VERSION --build-number
 ```bash
 NEW_VERSION=$(prepare-release --file ...)
 ```
+
+`--tag-prefix` keeps two families of tags apart in one repository. Give each family its own version file and changelog. The "forgot to bump" check removes the prefix from the changelog section before it compares it to the version file. `--pattern` cannot do this, because vrsn reads the capture, so the tag would still be the bare version.
 
 RC tags are auto-numbered by scanning consecutive RC sections in the changelog — numbering is sequential even when the base version changes mid-cycle (e.g. `1.2.4-RC1` → `1.3.0-RC2` → `2.0.0-RC3`). Use `--rc-number` to override.
 

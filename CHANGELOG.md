@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `prepare-release --tag-prefix <prefix>` puts a prefix before the version in the tag, the changelog section, the commit message and the GitHub release (e.g. `v1.0.0`, `v1.1.0-RC1`), so one repository can release a second family of tags from its own version file and changelog. The version file keeps the bare version
+
 ## [5.0.0] 2026-10-16
 
 ### Changed
