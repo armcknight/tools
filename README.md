@@ -19,6 +19,7 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `upload-symbols` | Upload dSYM files to Sentry (Xcode build phase) |
 | `tag-icons` | Overlay version/commit/custom text onto app icons (Xcode build phase) |
 | `ota-publish` | Upload an ad-hoc iOS `.ipa` to S3 and emit a short-lived itms-services OTA install landing page |
+| `md-toc` | Write a table of contents at the top of a Markdown file, with anchors for headers that have none |
 | `spm-acknowledgements` | Generate an acknowledgements file from SPM dependency licenses |
 
 ## Requirements
@@ -260,6 +261,21 @@ ${PATH_TO_TOOLS}/tag-icons commit /path/to/AppIcon.appiconset
 ${PATH_TO_TOOLS}/tag-icons custom /path/to/AppIcon.appiconset "beta"
 ${PATH_TO_TOOLS}/tag-icons cleanup /path/to/AppIcon.appiconset
 ```
+
+### md-toc
+
+```
+md-toc README.md                       # write or update the table of contents
+md-toc README.md --heading Contents    # put a "## Contents" header above the list
+md-toc README.md --max-level 3         # list only H1–H3
+md-toc README.md --no-anchors          # do not change headers; link to GitHub's header ids
+md-toc README.md --check               # exit non-zero if the table of contents is not up to date
+md-toc README.md --dry-run             # print the result, do not write the file
+```
+
+The table of contents goes between `<!-- toc -->` and `<!-- tocstop -->`. Put these markers where you want it; without them, it goes after the front matter and the title (an H1 on the first line of content). The title is not in the list. Headers in fenced code blocks are ignored. Setext headers (text underlined with `===` or `---`) are not supported.
+
+A header with no anchor gets one at the start of its text, `## <a id="getting-started"></a>Getting Started`. The id is the slug that GitHub makes, with `-1`, `-2` added to duplicates. A header keeps an anchor it has already: `<a id="...">`, `<a name="...">` or a trailing `{#...}`. Run the tool again after you edit the file; if the headers did not change, the file does not change.
 
 ## Testing
 

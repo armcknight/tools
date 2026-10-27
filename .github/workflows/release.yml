@@ -22,6 +22,7 @@ jobs:
         changetag
         check-release-ready
         inject-git-info
+        md-toc
         migrate-changelog
         ota-publish
         prepare-github-release

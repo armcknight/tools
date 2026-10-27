@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `make install` builds with the git commit in the version: every tool's `--version` prints `5.1.0+<commit>`, and `.dirty` when the working tree had changes. A release build prints the version alone
+- `md-toc` writes a table of contents with links to every header at the top of a Markdown file, and adds an anchor to each header that has none. A second run replaces the table of contents between its `<!-- toc -->` and `<!-- tocstop -->` markers. `--check` exits non-zero when the table of contents is not up to date
 
 ## [5.1.0] 2026-10-18
 
