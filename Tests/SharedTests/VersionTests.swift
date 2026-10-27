@@ -7,4 +7,9 @@ struct VersionTests {
         #expect(!toolsVersion.isEmpty)
         #expect(toolsVersion.contains("."))
     }
+
+     func fullVersionStartsWithTheVersion() {
+        // Without `make install`'s generated metadata, the two are the same.
+        #expect(toolsFullVersion.hasPrefix(toolsVersion))
+    }
 }

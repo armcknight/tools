@@ -7,7 +7,7 @@ import Shared
 struct MigrateChangelog: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Move Unreleased changelog entries to a new versioned section.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Path to the CHANGELOG.md file.")

@@ -7,7 +7,7 @@ struct Vrsn: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Bump version numbers in project files.",
         discussion: "Supports xcconfig, plist, podspec, gemspec, Swift, and plaintext files. Use --pattern with a capture group for arbitrary file formats.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Version component to bump: major, minor, or patch.")

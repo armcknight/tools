@@ -6,7 +6,7 @@ import Shared
 struct Xcbs: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Dump fully-resolved Xcode build settings to lock files for diffing.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Path to the .xcodeproj file.")

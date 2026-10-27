@@ -6,7 +6,7 @@ import Shared
 struct PrepareGithubRelease: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Create a GitHub release from a git tag using the changelog as release notes.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "The git tag to create a release for.")

@@ -8,7 +8,7 @@ struct InjectGitInfo: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Inject git metadata into Info.plist at build time.",
         discussion: "Writes GIT_COMMIT_HASH, GIT_BRANCH, and GIT_STATUS_CLEAN into the target's built Info.plist. Designed for use as an Xcode Run Script build phase.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Option(help: "Build configuration (reads from CONFIGURATION env var if not provided).")

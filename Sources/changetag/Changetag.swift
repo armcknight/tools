@@ -7,7 +7,7 @@ import Shared
 struct Changetag: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Extract release notes from a changelog and write them into a git tag annotation.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Path to the CHANGELOG.md file.")

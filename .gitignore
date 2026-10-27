@@ -8,3 +8,4 @@ homebrew-tools/
 .claude/settings.local.json
 /.envrc
 /worktrees/
+/Sources/Shared/BuildMetadata.generated.swift

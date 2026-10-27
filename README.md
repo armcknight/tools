@@ -52,7 +52,7 @@ make install    # Build and install dev binaries (shadows the Homebrew cask)
 make uninstall  # Remove dev binaries; reinstalls the Homebrew cask if one was present
 ```
 
-`make install` replaces the cask-installed binary symlinks at `$(brew --prefix)/bin/` with locally built ones for testing. `make uninstall` removes them and reinstalls the cask via `brew reinstall --cask tools`.
+`make install` replaces the cask-installed binary symlinks at `$(brew --prefix)/bin/` with locally built ones for testing. Their `--version` names the commit they were built from, such as `5.1.0+d0a4bc2`, with `.dirty` when the tree had changes. `make uninstall` removes them and reinstalls the cask via `brew reinstall --cask tools`.
 
 ### Releasing
 

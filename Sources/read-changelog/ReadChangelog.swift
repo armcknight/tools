@@ -6,7 +6,7 @@ import Shared
 struct ReadChangelog: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Print the contents of a changelog section to stdout.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Path to the CHANGELOG.md file.")

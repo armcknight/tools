@@ -6,7 +6,7 @@ import Shared
 struct Psst: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Inject secrets into source file placeholders.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Argument(help: "Optional path to a macOS keychain file.")

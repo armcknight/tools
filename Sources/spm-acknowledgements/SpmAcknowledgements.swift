@@ -6,7 +6,7 @@ import Shared
 struct SpmAcknowledgements: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Generate a CocoaPods-compatible acknowledgements plist from SPM dependencies.",
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     @Option(name: [.customShort("p"), .customLong("package-resolved")],

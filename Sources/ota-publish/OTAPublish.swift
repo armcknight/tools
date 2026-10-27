@@ -17,7 +17,7 @@ struct OTAPublish: AsyncParsableCommand {
 
         Prints a JSON object {"landingUrl": ..., "expiresAt": ...} to stdout.
         """,
-        version: toolsVersion
+        version: toolsFullVersion
     )
 
     enum Mode: String, ExpressibleByArgument, CaseIterable {

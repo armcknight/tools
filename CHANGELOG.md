@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `make install` builds with the git commit in the version: every tool's `--version` prints `5.1.0+<commit>`, and `.dirty` when the working tree had changes. A release build prints the version alone
+
 ## [5.1.0] 2026-10-18
 
 ### Added
