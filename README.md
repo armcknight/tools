@@ -1,8 +1,38 @@
 # tools
 
+<!-- toc -->
+
+- [Tools](#tools-1)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Development](#development)
+  - [Building and testing](#building-and-testing)
+  - [Local install](#local-install)
+  - [Releasing](#releasing)
+    - [One-time secret setup](#one-time-secret-setup)
+- [Usage](#usage)
+  - [migrate-changelog](#migrate-changelog)
+  - [changetag](#changetag)
+  - [vrsn](#vrsn)
+  - [prepare-release](#prepare-release)
+  - [prepare-github-release](#prepare-github-release)
+  - [read-changelog](#read-changelog)
+  - [xcbs](#xcbs)
+  - [psst](#psst)
+  - [inject-git-info](#inject-git-info)
+  - [upload-symbols](#upload-symbols)
+  - [tag-icons](#tag-icons)
+  - [md-toc](#md-toc)
+  - [xcprune](#xcprune)
+    - [Selecting items with `pick`](#selecting-items-with-pick)
+- [Testing](#testing)
+- [License](#license)
+
+<!-- tocstop -->
+
 A collection of developer tools for Apple platform projects, all written in Swift.
 
-## Tools
+## <a id="tools-1"></a>Tools
 
 | Tool | Description |
 |------|-------------|
@@ -23,12 +53,12 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `xcprune` | Find old Xcode apps, simulator runtimes, simulators, device support files and caches, and delete the ones you select |
 | `spm-acknowledgements` | Generate an acknowledgements file from SPM dependency licenses |
 
-## Requirements
+## <a id="requirements"></a>Requirements
 
 - Swift 6.1+
 - macOS 13+
 
-## Installation
+## <a id="installation"></a>Installation
 
 Shipped as a binary-only Homebrew cask. Source lives in this (private) repo; built binaries are uploaded to releases on `armcknight/homebrew-tools` and installed via cask. Apple Silicon only (`aarch64-apple-darwin`).
 
@@ -38,16 +68,16 @@ brew trust armcknight/tools   # third-party taps require explicit trust
 brew install --cask armcknight/tools/tools
 ```
 
-## Development
+## <a id="development"></a>Development
 
-### Building and testing
+### <a id="building-and-testing"></a>Building and testing
 
 ```bash
 make build   # Release build
 make test    # Run unit and integration tests
 ```
 
-### Local install
+### <a id="local-install"></a>Local install
 
 ```bash
 make install    # Build and install dev binaries (shadows the Homebrew cask)
@@ -56,7 +86,7 @@ make uninstall  # Remove dev binaries; reinstalls the Homebrew cask if one was p
 
 `make install` replaces the cask-installed binary symlinks at `$(brew --prefix)/bin/` with locally built ones for testing. Their `--version` names the commit they were built from, such as `5.1.0+d0a4bc2`, with `.dirty` when the tree had changes. `make uninstall` removes them and reinstalls the cask via `brew reinstall --cask tools`.
 
-### Releasing
+### <a id="releasing"></a>Releasing
 
 ```bash
 make patch                   # Bump patch version (must run before first deploy-beta in a cycle)
@@ -73,7 +103,7 @@ The `release` GitHub Actions workflow runs on every numeric tag push. It builds 
 
 So `make deploy` and `make deploy-beta` only handle the source-side tag push â€” the homebrew side is fully automated. (`tools` and `tools-rc` casks are marked `conflicts_with` each other, so brew won't let you have both installed at once.)
 
-#### One-time secret setup
+#### <a id="one-time-secret-setup"></a>One-time secret setup
 
 The workflow needs a `TAP_RELEASE_TOKEN` repo secret on `tools`. Create a **fine-grained personal access token** with:
 
@@ -103,18 +133,18 @@ make deploy-beta             # 2.0.0-RC2
 make deploy                  # consolidates all RC sections into 2.0.0
 ```
 
-## Usage
+## <a id="usage"></a>Usage
 
 Every tool supports `--help` and `--version`.
 
-### migrate-changelog
+### <a id="migrate-changelog"></a>migrate-changelog
 
 ```
 migrate-changelog CHANGELOG.md 1.2.0
 migrate-changelog CHANGELOG.md 1.2.0 --no-commit
 ```
 
-### changetag
+### <a id="changetag"></a>changetag
 
 ```
 changetag CHANGELOG.md 1.2.0
@@ -122,7 +152,7 @@ changetag CHANGELOG.md 1.2.0 --commit --message "bump version to 1.2.0"
 changetag CHANGELOG.md v1.2.0 --name 1.2.0
 ```
 
-### vrsn
+### <a id="vrsn"></a>vrsn
 
 ```
 vrsn major -f Config.xcconfig
@@ -138,7 +168,7 @@ vrsn minor -f Config.xcconfig -k MARKETING_VERSION --commit  # bump and commit i
 vrsn minor -f Config.xcconfig -k MARKETING_VERSION --commit --stash  # stash other staged changes first
 ```
 
-### prepare-release
+### <a id="prepare-release"></a>prepare-release
 
 Version bumping is the caller's responsibility. Run `vrsn` (or `make patch/minor/major`) before calling `prepare-release`. It will error if the version in `--file` matches the most recent non-RC changelog section, catching the "forgot to bump" case.
 
@@ -184,7 +214,7 @@ RC tags are auto-numbered by scanning consecutive RC sections in the changelog â
 
 When a final release follows an RC cycle, `prepare-release` detects the existing RC sections and consolidates all of them into the final release entry regardless of their version prefix. A final release after an RC cycle requires an empty `[Unreleased]` section, so it ships only changes that a release candidate tested. A release candidate, or a final release with no RC cycle, requires entries in `[Unreleased]`.
 
-### prepare-github-release
+### <a id="prepare-github-release"></a>prepare-github-release
 
 ```
 prepare-github-release 1.2.0                          # create release from tag with changelog notes
@@ -193,7 +223,7 @@ prepare-github-release 1.2.0 --prerelease             # mark as prerelease
 prepare-github-release 1.2.0 --changelog path/to/CHANGELOG.md
 ```
 
-### read-changelog
+### <a id="read-changelog"></a>read-changelog
 
 ```
 read-changelog CHANGELOG.md --latest-tag        # print the section for the most recent git tag
@@ -209,7 +239,7 @@ changelog_text = sh("read-changelog ../CHANGELOG.md --latest-tag").strip
 upload_to_testflight(changelog: changelog_text)
 ```
 
-### xcbs
+### <a id="xcbs"></a>xcbs
 
 ```
 xcbs MyProject.xcodeproj
@@ -219,7 +249,7 @@ Exit code 66 means build settings changed from the previous lock files.
 
 To use as a git pre-commit hook, copy `Resources/xcbs/pre-commit.sample` to `.git/hooks/pre-commit`.
 
-### psst
+### <a id="psst"></a>psst
 
 ```
 psst                          # use .psst/values and env vars
@@ -228,7 +258,7 @@ psst /path/to/keychain        # also check macOS Keychain
 
 Keys are defined in `.psst/keys`, values in `.psst/values` (gitignored).
 
-### inject-git-info
+### <a id="inject-git-info"></a>inject-git-info
 
 As an Xcode build phase:
 
@@ -242,7 +272,7 @@ Or with explicit arguments:
 inject-git-info --plist-path /path/to/Info.plist --project-dir /path/to/project
 ```
 
-### upload-symbols
+### <a id="upload-symbols"></a>upload-symbols
 
 As an Xcode build phase:
 
@@ -252,7 +282,7 @@ ${PATH_TO_TOOLS}/upload-symbols
 
 Resolves Sentry credentials from environment variables, `~/.sentryclirc`, or a `.env` file.
 
-### tag-icons
+### <a id="tag-icons"></a>tag-icons
 
 As an Xcode build phase:
 
@@ -263,7 +293,7 @@ ${PATH_TO_TOOLS}/tag-icons custom /path/to/AppIcon.appiconset "beta"
 ${PATH_TO_TOOLS}/tag-icons cleanup /path/to/AppIcon.appiconset
 ```
 
-### md-toc
+### <a id="md-toc"></a>md-toc
 
 ```
 md-toc README.md                       # write or update the table of contents
@@ -278,7 +308,7 @@ The table of contents goes between `<!-- toc -->` and `<!-- tocstop -->`. Put th
 
 A header with no anchor gets one at the start of its text, `## <a id="getting-started"></a>Getting Started`. The id is the slug that GitHub makes, with `-1`, `-2` added to duplicates. A header keeps an anchor it has already: `<a id="...">`, `<a name="...">` or a trailing `{#...}`. Run the tool again after you edit the file; if the headers did not change, the file does not change.
 
-### xcprune
+### <a id="xcprune"></a>xcprune
 
 ```
 xcprune scan                              # list everything, with sizes and ids; * marks suggested items
@@ -313,7 +343,7 @@ Xcode apps, archives and other caches are never suggested, but you can select th
 
 The simulator dyld shared caches in `/Library/Developer/CoreSimulator/Caches/dyld/<macOS build>/<runtime>` are listed one per runtime for the running macOS build, and one per folder for each other macOS build. CoreSimulator makes a runtime's cache when one of its simulators boots, so deleting the cache of an installed runtime gives the space back only until that runtime's next boot, which is slower. A folder for another macOS build is left after a macOS update and is not used again; the same is true for the cache of a runtime that is not installed. The cache of an installed runtime is deleted with `xcrun simctl runtime dyld_shared_cache remove`; if that fails, `xcprune` deletes the folder, which needs administrator rights.
 
-#### Selecting items with `pick`
+#### <a id="selecting-items-with-pick"></a>Selecting items with `pick`
 
 `pick` needs [fzf](https://github.com/junegunn/fzf) (`brew install fzf`). It scans, then shows one line for each item: the id, `*` if the item is suggested, the category, the size and the name. `--suggested`, `--category` and `--dry-run` work as they do for `scan` and `delete`.
 
@@ -331,12 +361,12 @@ A selected line has `>` at its left edge. The counter above the list shows how m
 
 After ENTER, `pick` lists the items and their total size and asks `Delete these items? [y/N]`. Nothing is deleted until you type `y`. For example, to delete all DerivedData: run `xcprune pick`, type `derived-data`, press Ctrl-A, then ENTER, then type `y`.
 
-## Testing
+## <a id="testing"></a>Testing
 
 ```
 swift test
 ```
 
-## License
+## <a id="license"></a>License
 
 Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) for the full text.
