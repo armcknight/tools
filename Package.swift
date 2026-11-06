@@ -105,6 +105,13 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]),
         .executableTarget(
+            name: "xcprune",
+            dependencies: [
+                "Shared",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Subprocess", package: "swift-subprocess"),
+            ]),
+        .executableTarget(
             name: "ota-publish",
             dependencies: [
                 "Shared",

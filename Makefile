@@ -6,7 +6,7 @@ METADATA_FILE = Sources/Shared/BuildMetadata.generated.swift
 # workflow writes that list into the cask's binary lines, so the tap needs no edit.
 BINARIES = changetag check-release-ready inject-git-info md-toc migrate-changelog ota-publish \
            prepare-github-release prepare-release psst read-changelog \
-           spm-acknowledgements tag-icons upload-symbols vrsn xcbs
+           spm-acknowledgements tag-icons upload-symbols vrsn xcbs xcprune
 
 .DEFAULT_GOAL := help
 

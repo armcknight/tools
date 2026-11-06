@@ -22,14 +22,20 @@ enum ToolRunner {
     static func run(
         _ tool: String,
         arguments: [String] = [],
-        workingDirectory: String? = nil
+        workingDirectory: String? = nil,
+        environment: [String: String] = [:]
     ) async throws -> (exitCode: Int32, stdout: String, stderr: String) {
         let toolPath = "\(buildDir)/\(tool)"
+
+        var updates: [Environment.Key: String?] = ["PATH": "\(buildDir):\(ProcessInfo.processInfo.environment["PATH"] ?? "")"]
+        for (key, value) in environment {
+            updates[Environment.Key(stringLiteral: key)] = value
+        }
 
         let result = try await Subprocess.run(
             .path(FilePath(toolPath)),
             arguments: Arguments(arguments),
-            environment: .inherit.updating(["PATH": "\(buildDir):\(ProcessInfo.processInfo.environment["PATH"] ?? "")"]),
+            environment: .inherit.updating(updates),
             workingDirectory: workingDirectory.map { FilePath($0) },
             output: .string(limit: 16 * 1024 * 1024),
             error: .string(limit: 16 * 1024 * 1024)

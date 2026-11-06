@@ -34,6 +34,7 @@ jobs:
         upload-symbols
         vrsn
         xcbs
+        xcprune
       version-file: Sources/Shared/Version.swift
       version-regex: '.*toolsVersion.*"([^"]+)".*'
       sign: true

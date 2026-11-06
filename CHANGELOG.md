@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `make install` builds with the git commit in the version: every tool's `--version` prints `5.1.0+<commit>`, and `.dirty` when the working tree had changes. A release build prints the version alone
 - `md-toc` writes a table of contents with links to every header at the top of a Markdown file, and adds an anchor to each header that has none. A second run replaces the table of contents between its `<!-- toc -->` and `<!-- tocstop -->` markers. `--check` exits non-zero when the table of contents is not up to date
+- `xcprune` finds old Xcode apps, simulator runtimes, simulators, device support files, DerivedData, archives, caches and `.xip` installers, with their sizes. `xcprune scan` marks the items that are safe to delete, `xcprune delete <id>...` or `--suggested` deletes items after you confirm, and `xcprune pick` lets you select items in fzf. `xcprune tree` shows them as a tree with size bars: each Xcode with its SDKs, the runtimes its SDKs match and their simulators, then the runtimes and simulators that no Xcode uses, device support, DerivedData and the rest. Simulator dyld caches are listed per macOS build and per runtime: folders for another macOS build and caches of runtimes that are not installed are suggested, and the cache of an installed runtime is deleted with `simctl runtime dyld_shared_cache remove`
 
 ## [5.1.0] 2026-10-18
 

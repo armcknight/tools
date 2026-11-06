@@ -20,6 +20,7 @@ A collection of developer tools for Apple platform projects, all written in Swif
 | `tag-icons` | Overlay version/commit/custom text onto app icons (Xcode build phase) |
 | `ota-publish` | Upload an ad-hoc iOS `.ipa` to S3 and emit a short-lived itms-services OTA install landing page |
 | `md-toc` | Write a table of contents at the top of a Markdown file, with anchors for headers that have none |
+| `xcprune` | Find old Xcode apps, simulator runtimes, simulators, device support files and caches, and delete the ones you select |
 | `spm-acknowledgements` | Generate an acknowledgements file from SPM dependency licenses |
 
 ## Requirements
@@ -276,6 +277,59 @@ md-toc README.md --dry-run             # print the result, do not write the file
 The table of contents goes between `<!-- toc -->` and `<!-- tocstop -->`. Put these markers where you want it; without them, it goes after the front matter and the title (an H1 on the first line of content). The title is not in the list. Headers in fenced code blocks are ignored. Setext headers (text underlined with `===` or `---`) are not supported.
 
 A header with no anchor gets one at the start of its text, `## <a id="getting-started"></a>Getting Started`. The id is the slug that GitHub makes, with `-1`, `-2` added to duplicates. A header keeps an anchor it has already: `<a id="...">`, `<a name="...">` or a trailing `{#...}`. Run the tool again after you edit the file; if the headers did not change, the file does not change.
+
+### xcprune
+
+```
+xcprune scan                              # list everything, with sizes and ids; * marks suggested items
+xcprune scan --suggested                  # list only the suggested items
+xcprune scan --category runtime -c simulator
+xcprune scan --json                       # print the items as JSON
+xcprune tree                              # each Xcode with its SDKs, runtimes and simulators, then the rest, with size bars
+xcprune tree --depth 2 -c xcode -c runtime -c simulator
+xcprune tree --all                        # show every item; without it, a group shows its 10 largest
+xcprune delete 632860 4f62e4              # delete items by id (asks first)
+xcprune delete --suggested                # delete all suggested items (asks first)
+xcprune delete --suggested --dry-run      # show what would be deleted
+xcprune delete --suggested --yes          # do not ask
+xcprune pick                              # select items in fzf, then delete them (see "Selecting items with pick")
+xcprune pick --suggested --dry-run        # select from the suggested items only; delete nothing
+```
+
+`tree` puts each Xcode at the top of its own group: the app, with a size for each platform's SDKs, and the simulator runtimes that its SDKs match (from `xcrun simctl runtime match list`), with their simulators. When the exact runtime build is not installed, the newest installed runtime with the same major.minor version is shown, as Xcode uses it; a runtime that is not installed is marked `!`. If `simctl` fails for an Xcode, for example before its license is accepted, the match comes from the simulator SDK's build. Runtimes that no installed Xcode matches, simulators whose runtime is not installed, device support, DerivedData, archives, caches and the Command Line Tools SDKs follow, each in its own group. A bar at the top shows the disk: Xcode-related, other and free space.
+
+The categories are `xcode`, `runtime`, `simulator`, `device-support`, `derived-data`, `archive`, `cache` and `download`. An id is a hash of the item's path or identifier, so it is the same in each scan. `delete` scans again before it deletes, so an id from an earlier scan is still correct.
+
+These items are suggested for deletion:
+
+- Simulators whose runtime is not installed
+- Simulator runtimes that a newer runtime of the same platform and major version replaces, or that no simulator used for 180 days
+- Device support folders older than the newest one for the same device model. Xcode makes the folder again when a device with that version connects
+- DerivedData whose project is not on disk, or that no build used for 30 days
+- Simulator dyld caches for a macOS build other than the one that runs, or for a runtime that is not installed
+- `.xip` installers in `~/Downloads` and in the Xcodes app's folder
+
+Xcode apps, archives and other caches are never suggested, but you can select them. Xcode apps go to the Trash. Simulators and runtimes are deleted with `xcrun simctl`. Everything else is deleted at once; the Xcode, documentation and SwiftPM caches are emptied, not removed. For an item that needs administrator rights, `xcprune` prints a `sudo` command for you to run.
+
+The simulator dyld shared caches in `/Library/Developer/CoreSimulator/Caches/dyld/<macOS build>/<runtime>` are listed one per runtime for the running macOS build, and one per folder for each other macOS build. CoreSimulator makes a runtime's cache when one of its simulators boots, so deleting the cache of an installed runtime gives the space back only until that runtime's next boot, which is slower. A folder for another macOS build is left after a macOS update and is not used again; the same is true for the cache of a runtime that is not installed. The cache of an installed runtime is deleted with `xcrun simctl runtime dyld_shared_cache remove`; if that fails, `xcprune` deletes the folder, which needs administrator rights.
+
+#### Selecting items with `pick`
+
+`pick` needs [fzf](https://github.com/junegunn/fzf) (`brew install fzf`). It scans, then shows one line for each item: the id, `*` if the item is suggested, the category, the size and the name. `--suggested`, `--category` and `--dry-run` work as they do for `scan` and `delete`.
+
+| Key | What it does |
+|-----|--------------|
+| Type text | Show only the lines that contain these letters, in this order, e.g. `runtime 17` or `derived`. Backspace removes the filter |
+| Up / Down | Move the highlight |
+| TAB | Select or deselect the highlighted line, and move down. Shift-TAB does the same and moves up |
+| Ctrl-A | Select all the lines that are shown. With a filter, this selects only the lines that match it |
+| Ctrl-D | Deselect all lines |
+| ENTER | Continue with the selected lines. If no line is selected, the highlighted line is used |
+| ESC or Ctrl-C | Cancel. Nothing is deleted |
+
+A selected line has `>` at its left edge. The counter above the list shows how many lines match and, in parentheses, how many are selected. The keys are also shown at the top of the screen.
+
+After ENTER, `pick` lists the items and their total size and asks `Delete these items? [y/N]`. Nothing is deleted until you type `y`. For example, to delete all DerivedData: run `xcprune pick`, type `derived-data`, press Ctrl-A, then ENTER, then type `y`.
 
 ## Testing
 
